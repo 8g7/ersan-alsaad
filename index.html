@@ -26,9 +26,9 @@
   --border-l:#4a4c90;
 
   /* Status */
-  --sold:     #53a4a9;
-  --reserved: #a27db8;
-  --available:#6b8cda;
+  --sold:     #ef4444;
+  --reserved: #22c55e;
+  --available:#e5e7eb;
 
   /* Text */
   --text:  #e8edf8;
@@ -212,6 +212,7 @@ body::before{
   background:rgba(83,164,169,.15);border-color:rgba(83,164,169,.4);
   color:var(--text);
 }
+.filter-btn[data-filter="all"].active{background:rgba(255,255,255,.08);border-color:var(--border-l)}
 .filter-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
 .filter-count{margin-right:auto;font-size:10px;background:rgba(255,255,255,.08);padding:1px 7px;border-radius:10px}
 
@@ -275,15 +276,15 @@ body::before{
   cursor:pointer;transition:all .2s;
 }
 .btn-sell{
-  background:rgba(83,164,169,.15);color:var(--teal);
-  border:1px solid rgba(83,164,169,.35);
+  background:rgba(239,68,68,.13);color:var(--sold);
+  border:1px solid rgba(239,68,68,.34);
 }
-.btn-sell:hover{background:rgba(83,164,169,.3)}
+.btn-sell:hover{background:rgba(239,68,68,.24)}
 .btn-reserve{
-  background:rgba(162,125,184,.15);color:var(--purple);
-  border:1px solid rgba(162,125,184,.35);
+  background:rgba(34,197,94,.13);color:var(--reserved);
+  border:1px solid rgba(34,197,94,.34);
 }
-.btn-reserve:hover{background:rgba(162,125,184,.3)}
+.btn-reserve:hover{background:rgba(34,197,94,.24)}
 
 /* Hover tooltip */
 .map-tooltip{
@@ -321,15 +322,16 @@ body::before{
 .sale-modal-preview .smp-row b{color:var(--text)}
 
 /* Status badges */
-.sb-sold{background:rgba(83,164,169,.2);color:var(--teal);padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;border:1px solid rgba(83,164,169,.3)}
-.sb-reserved{background:rgba(162,125,184,.2);color:var(--purple);padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;border:1px solid rgba(162,125,184,.3)}
-.sb-available{background:rgba(107,140,218,.15);color:#8aaaf0;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;border:1px solid rgba(107,140,218,.25)}
+.sb-sold{background:rgba(239,68,68,.16);color:var(--sold);padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;border:1px solid rgba(239,68,68,.32)}
+.sb-reserved{background:rgba(34,197,94,.16);color:var(--reserved);padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;border:1px solid rgba(34,197,94,.32)}
+.sb-available{background:rgba(229,231,235,.14);color:var(--available);padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;border:1px solid rgba(229,231,235,.3)}
 
 /* Polygon hover */
 .lot-poly{cursor:pointer;transition:opacity .15s}
 .lot-poly:hover{opacity:.65;stroke:#fff!important;stroke-width:1.5px!important}
-.lot-status-sold{fill:var(--teal)!important;fill-opacity:.85!important}
-.lot-status-reserved{fill:var(--purple)!important;fill-opacity:.85!important}
+.lot-status-sold{fill:var(--sold)!important;fill-opacity:.9!important}
+.lot-status-reserved{fill:var(--reserved)!important;fill-opacity:.88!important}
+.lot-status-available{fill:var(--available)!important;fill-opacity:.78!important;stroke:#fff!important;stroke-opacity:.25!important}
 .lot-dimmed{opacity:.12!important}
 
 /* ══ DASHBOARD ══ */
@@ -495,6 +497,8 @@ body::before{
   background:rgba(83,164,169,.08);border:1px solid rgba(83,164,169,.25);
   border-radius:9px;padding:10px;margin-top:8px;font-size:11px;display:none;
 }
+.admin-only{display:none}
+.admin-price-note{font-size:10px;color:var(--muted);margin-top:6px;line-height:1.6}
 
 @media(max-width:1100px){.kpi-grid{grid-template-columns:repeat(2,1fr)}.dash-grid{grid-template-columns:1fr 1fr}.report-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:800px){.input-grid{grid-template-columns:1fr}}
@@ -674,21 +678,22 @@ body::before{
     <div class="map-sidebar">
       <div class="sidebar-section">
         <div class="sidebar-section-title">ملخص الحالة</div>
-        <div class="stat-row"><span class="stat-dot" style="background:var(--teal)"></span><span class="stat-label">مباعة</span><span class="stat-val" id="st-sold" style="color:var(--teal)">—</span></div>
-        <div class="stat-row"><span class="stat-dot" style="background:var(--purple)"></span><span class="stat-label">محجوزة</span><span class="stat-val" id="st-res" style="color:var(--purple)">—</span></div>
-        <div class="stat-row"><span class="stat-dot" style="background:#6b8cda"></span><span class="stat-label">متاحة</span><span class="stat-val" id="st-avail" style="color:#8aaaf0">—</span></div>
-        <div class="progress-bar"><div class="progress-fill" id="progFill" style="background:var(--teal);width:0%"></div></div>
-        <div style="font-size:10px;color:var(--muted);margin-top:5px">نسبة المباع: <span id="progPct" style="color:var(--teal);font-weight:700">0%</span></div>
+        <div class="stat-row"><span class="stat-dot" style="background:var(--sold)"></span><span class="stat-label">مباعة</span><span class="stat-val" id="st-sold" style="color:var(--sold)">—</span></div>
+        <div class="stat-row"><span class="stat-dot" style="background:var(--reserved)"></span><span class="stat-label">محجوزة</span><span class="stat-val" id="st-res" style="color:var(--reserved)">—</span></div>
+        <div class="stat-row"><span class="stat-dot" style="background:var(--available)"></span><span class="stat-label">متاحة</span><span class="stat-val" id="st-avail" style="color:var(--available)">—</span></div>
+        <div class="progress-bar"><div class="progress-fill" id="progFill" style="background:var(--sold);width:0%"></div></div>
+        <div style="font-size:10px;color:var(--muted);margin-top:5px">نسبة المباع: <span id="progPct" style="color:var(--sold);font-weight:700">0%</span></div>
       </div>
 
       <div class="sidebar-section">
         <div class="sidebar-section-title">فلتر الخريطة</div>
-        <button class="filter-btn active" onclick="applyFilter('all',this)"><span class="filter-dot" style="background:var(--muted)"></span><span>الكل</span><span class="filter-count">2,836</span></button>
-        <button class="filter-btn" onclick="applyFilter('سكني',this)"><span class="filter-dot" style="background:var(--teal)"></span><span>سكني</span><span class="filter-count" id="fc-res">—</span></button>
-        <button class="filter-btn" onclick="applyFilter('تجاري',this)"><span class="filter-dot" style="background:var(--purple)"></span><span>تجاري</span><span class="filter-count" id="fc-com">—</span></button>
-        <button class="filter-btn" onclick="applyFilter('مباعة',this)"><span class="filter-dot" style="background:var(--teal)"></span><span>✅ مباعة فقط</span><span class="filter-count" id="fc-sold">—</span></button>
-        <button class="filter-btn" onclick="applyFilter('محجوز',this)"><span class="filter-dot" style="background:var(--purple)"></span><span>🔒 محجوزة فقط</span><span class="filter-count" id="fc-resv">—</span></button>
-        <button class="filter-btn" onclick="applyFilter('غير مباعة',this)"><span class="filter-dot" style="background:#6b8cda"></span><span>🏷 متاحة فقط</span><span class="filter-count" id="fc-avail">—</span></button>
+        <button class="filter-btn active" data-filter="all" onclick="applyFilter('all',this)"><span class="filter-dot" style="background:var(--muted)"></span><span>الكل</span><span class="filter-count" id="fc-all">—</span></button>
+        <button class="filter-btn" data-filter="سكني" onclick="applyFilter('سكني',this)"><span class="filter-dot" style="background:var(--sold)"></span><span>سكني</span><span class="filter-count" id="fc-res">—</span></button>
+        <button class="filter-btn" data-filter="تجاري" onclick="applyFilter('تجاري',this)"><span class="filter-dot" style="background:var(--purple)"></span><span>تجاري</span><span class="filter-count" id="fc-com">—</span></button>
+        <button class="filter-btn" data-filter="مباعة" onclick="applyFilter('مباعة',this)"><span class="filter-dot" style="background:var(--sold)"></span><span>✅ مباعة</span><span class="filter-count" id="fc-sold">—</span></button>
+        <button class="filter-btn" data-filter="محجوز" onclick="applyFilter('محجوز',this)"><span class="filter-dot" style="background:var(--reserved)"></span><span>🔒 محجوزة</span><span class="filter-count" id="fc-resv">—</span></button>
+        <button class="filter-btn" data-filter="غير مباعة" onclick="applyFilter('غير مباعة',this)"><span class="filter-dot" style="background:var(--available)"></span><span>🏷 متاحة</span><span class="filter-count" id="fc-avail">—</span></button>
+        <div style="font-size:10px;color:var(--muted);line-height:1.6;margin-top:8px">يمكن اختيار أكثر من فلتر. الاستخدام + الحالة يعملان معاً، مثل: سكني + مباعة.</div>
       </div>
 
       <div class="sidebar-section">
@@ -700,10 +705,10 @@ body::before{
       <div class="sidebar-section">
         <div class="sidebar-section-title">المفتاح</div>
         <div style="display:flex;flex-direction:column;gap:7px">
-          <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted)"><div style="width:12px;height:12px;border-radius:3px;background:#c4c4d5"></div> سكني — متاح</div>
-          <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted)"><div style="width:12px;height:12px;border-radius:3px;background:#dae2ec"></div> تجاري — متاح</div>
-          <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted)"><div style="width:12px;height:12px;border-radius:3px;background:var(--teal)"></div> مباعة</div>
-          <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted)"><div style="width:12px;height:12px;border-radius:3px;background:var(--purple)"></div> محجوزة</div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted)"><div style="width:12px;height:12px;border-radius:3px;background:var(--sold)"></div> مباعة — أحمر</div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted)"><div style="width:12px;height:12px;border-radius:3px;background:var(--reserved)"></div> محجوزة — أخضر</div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted)"><div style="width:12px;height:12px;border-radius:3px;background:var(--available);border:1px solid rgba(255,255,255,.5)"></div> متاحة — فضي أبيض</div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted)"><div style="width:12px;height:12px;border-radius:3px;background:#fff;opacity:.12"></div> غير مطابق للفلاتر المختارة</div>
         </div>
       </div>
     </div>
@@ -890,6 +895,12 @@ body::before{
           <div class="preview-row"><span style="color:var(--muted);font-size:11px">القيمة المعتمدة (ثابتة)</span><span id="prev-val" style="font-weight:700;color:#f59e0b"></span></div>
           <div class="preview-row"><span style="color:var(--muted);font-size:11px">سعر المتر المعتمد (ثابت)</span><span id="prev-pricem" style="font-weight:700"></span></div>
           <div class="preview-row"><span style="color:var(--muted);font-size:11px">الحالة الحالية</span><span id="prev-status"></span></div>
+        </div>
+        <div class="form-group admin-only" id="adminPriceGroup">
+          <label class="form-label">⚙️ السعر المعتمد الافتراضي ريال/م² (للمدير فقط)</label>
+          <input type="number" class="form-input" id="inp-default-price" placeholder="أدخل السعر المعتمد الجديد للقطعة المختارة">
+          <div class="admin-price-note">يتم تحديث سعر المتر والقيمة المعتمدة للقطعة حسب المساحة، ولا يغيّر سعر البيع الفعلي للصفقات السابقة.</div>
+          <button class="btn-submit" style="margin-top:10px;background:linear-gradient(135deg,var(--purple),var(--navy-l));box-shadow:0 4px 20px rgba(162,125,184,.28)" onclick="updateDefaultPrice()">حفظ السعر المعتمد ←</button>
         </div>
         <div class="form-group">
           <label class="form-label">👤 اسم المشتري / الجهة *</label>
@@ -52362,6 +52373,9 @@ let statusOverrides = {};
 let transactions = [];
 let currentUser = null;
 let currentFilter = 'all';
+let activeFilters = new Set();
+const FILTER_TYPES = new Set(['سكني','تجاري']);
+const FILTER_STATUSES = new Set(['مباعة','محجوز','غير مباعة']);
 let svgEl = null, viewX=0, viewY=0, viewScale=1, dragging=false, dragStart={};
 
 // ── USERS ──
@@ -52412,10 +52426,13 @@ function applyRoleUI(){
   const role = currentUser ? currentUser.role : 'guest';
   const isGuest = role==='guest';
   const canEdit = role==='admin' || role==='sales';
+  const canSeeReports = role==='admin' || role==='viewer';
   // Tabs
   document.getElementById('tabDash').style.display    = isGuest ? 'none' : 'inline-block';
-  document.getElementById('tabReports').style.display = isGuest ? 'none' : 'inline-block';
+  document.getElementById('tabReports').style.display = canSeeReports ? 'inline-block' : 'none';
   document.getElementById('tabInput').style.display   = canEdit ? 'inline-block' : 'none';
+  // Admin-only price tools
+  document.querySelectorAll('.admin-only').forEach(el=>{ el.style.display = role==='admin' ? 'block' : 'none'; });
   // User badge / login button
   document.getElementById('userBadge').style.display  = isGuest ? 'none' : 'flex';
   document.getElementById('logoutBtn').style.display  = isGuest ? 'none' : 'inline-block';
@@ -52436,8 +52453,9 @@ function logout(){
 
 // ── NAV ──
 function showPage(name,btn){
-  // Guests can only see map
+  // Guests can only see map; sales users cannot open reports
   if(currentUser && currentUser.role==='guest' && name!=='map'){ return; }
+  if(currentUser && currentUser.role==='sales' && name==='reports'){ return; }
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
   document.getElementById(name+'Page').classList.add('active');
@@ -52458,7 +52476,7 @@ function initApp(){
 }
 function refreshAll(){
   applyStatusColors();
-  applyFilter(currentFilter,null);
+  applyFilter(null,null);
   updateFilterCounts();
   updateStats();
   updateDashboard();
@@ -52518,8 +52536,8 @@ function loadMapSVG(){
     el.style.cursor='help';
     el.addEventListener('mouseenter',()=>{
       if(dragging) return;
-      tooltip.innerHTML=`<div class="tt-lot" style="color:var(--muted);font-size:12px">قطعة غير مرتبطة</div>
-        <div class="tt-row" style="margin-top:4px">رقم القطعة غير محدد على الخريطة بعد</div>`;
+      tooltip.innerHTML=`<div class="tt-lot" style="color:var(--muted);font-size:12px">شكل غير مربوط بقطعة</div>
+        <div class="tt-row" style="margin-top:4px">هذا الشكل موجود في ملف الخريطة، لكنه لا يحتوي على data-lot لذلك لا يمكن ربطه برقم قطعة أو حالة بيع.</div>`;
       tooltip.style.display='block';
     });
     el.addEventListener('mousemove',e=>{
@@ -52564,31 +52582,46 @@ function applyStatusColors(){
   svgEl.querySelectorAll('[data-lot]').forEach(el=>{
     const lot=el.getAttribute('data-lot');
     const st=statusOverrides[lot]||(LOTS[lot]&&LOTS[lot].s)||'غير مباعة';
-    el.classList.remove('lot-status-sold','lot-status-reserved');
+    el.classList.remove('lot-status-sold','lot-status-reserved','lot-status-available');
     if(st==='مباعة') el.classList.add('lot-status-sold');
     else if(st==='محجوز') el.classList.add('lot-status-reserved');
+    else el.classList.add('lot-status-available');
   });
 }
 
 function applyFilter(filter,btn){
-  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
-  if(btn) btn.classList.add('active');
-  currentFilter=filter;
+  if(filter==='all'){
+    activeFilters.clear();
+    currentFilter='all';
+  } else if(filter){
+    if(activeFilters.has(filter)) activeFilters.delete(filter);
+    else activeFilters.add(filter);
+    currentFilter = activeFilters.size ? Array.from(activeFilters).join('|') : 'all';
+  }
+
+  document.querySelectorAll('.filter-btn').forEach(b=>{
+    const f=b.dataset.filter;
+    b.classList.toggle('active', f==='all' ? activeFilters.size===0 : activeFilters.has(f));
+  });
+
   if(!svgEl) return;
+  const selectedTypes = new Set([...activeFilters].filter(f=>FILTER_TYPES.has(f)));
+  const selectedStatuses = new Set([...activeFilters].filter(f=>FILTER_STATUSES.has(f)));
+
   svgEl.querySelectorAll('[data-lot]').forEach(el=>{
     const lot=el.getAttribute('data-lot');
     const info=LOTS[lot];
     if(!info){el.classList.remove('lot-dimmed');return;}
     const st=statusOverrides[lot]||info.s;
-    const show = filter==='all' || (filter==='سكني'&&info.t==='سكني') ||
-      (filter==='تجاري'&&info.t==='تجاري') || (filter==='مباعة'&&st==='مباعة') ||
-      (filter==='محجوز'&&st==='محجوز') || (filter==='غير مباعة'&&st==='غير مباعة');
-    el.classList.toggle('lot-dimmed',!show);
+    const typeMatch = selectedTypes.size===0 || selectedTypes.has(info.t);
+    const statusMatch = selectedStatuses.size===0 || selectedStatuses.has(st);
+    el.classList.toggle('lot-dimmed', !(typeMatch && statusMatch));
   });
 }
 
 function updateFilterCounts(){
   let res=0,com=0,sold=0,resv=0,avail=0;
+  const totalLots=Object.keys(LOTS).length;
   Object.entries(LOTS).forEach(([lot,info])=>{
     const st=statusOverrides[lot]||info.s;
     if(info.t==='سكني') res++;
@@ -52597,6 +52630,7 @@ function updateFilterCounts(){
     else if(st==='محجوز') resv++;
     else avail++;
   });
+  const fcAll=document.getElementById('fc-all'); if(fcAll) fcAll.textContent=totalLots.toLocaleString('en');
   document.getElementById('fc-res').textContent=res.toLocaleString('en');
   document.getElementById('fc-com').textContent=com.toLocaleString('en');
   document.getElementById('fc-sold').textContent=sold.toLocaleString('en');
@@ -52605,7 +52639,7 @@ function updateFilterCounts(){
   document.getElementById('st-sold').textContent=sold.toLocaleString('en');
   document.getElementById('st-res').textContent=resv.toLocaleString('en');
   document.getElementById('st-avail').textContent=avail.toLocaleString('en');
-  const pct=((sold/2836)*100).toFixed(1);
+  const pct=((sold/totalLots)*100).toFixed(1);
   document.getElementById('progFill').style.width=pct+'%';
   document.getElementById('progPct').textContent=pct+'%';
 }
@@ -52668,7 +52702,7 @@ function quickUpdate(lot,st){
   if(st==='غير مباعة'){
     transactions=transactions.filter(t=>String(t.lot)!==String(lot));
   }
-  applyStatusColors(); applyFilter(currentFilter,null);
+  applyStatusColors(); applyFilter(null,null);
   updateFilterCounts(); updateStats(); closePopup(); renderTxBody(); updateDashboard();
 }
 
@@ -52725,7 +52759,7 @@ function submitSaleModal(){
     status:saleModalStatus, value, salePrice, approvedPrice:info.p,
     date, notes
   });
-  applyStatusColors(); applyFilter(currentFilter,null);
+  applyStatusColors(); applyFilter(null,null);
   updateFilterCounts(); updateStats(); updateDashboard(); renderTxBody();
   closeSaleModal();
 }
@@ -52835,7 +52869,26 @@ function previewLot(){
   document.getElementById('prev-val').textContent=Math.round(info.v).toLocaleString('en')+' ريال';
   document.getElementById('prev-pricem').textContent=info.p.toLocaleString('en')+' ريال/م²';
   document.getElementById('prev-status').innerHTML=statusBadge(st);
+  const adminPriceInput=document.getElementById('inp-default-price');
+  if(adminPriceInput && currentUser && currentUser.role==='admin'){ adminPriceInput.value=info.p; }
   el.classList.add('show');
+}
+
+function updateDefaultPrice(){
+  const alert=document.getElementById('inputAlert');
+  if(!currentUser || currentUser.role!=='admin'){showAlert(alert,'❌ تعديل السعر المعتمد متاح للمدير فقط','error');return;}
+  const lot=document.getElementById('inp-lot').value;
+  const info=LOTS[lot];
+  const newPrice=parseFloat(document.getElementById('inp-default-price').value);
+  if(!lot || !info){showAlert(alert,'❌ أدخل رقم قطعة صحيح أولاً','error');return;}
+  if(!Number.isFinite(newPrice) || newPrice<=0){showAlert(alert,'❌ أدخل سعر متر صحيح أكبر من صفر','error');return;}
+  info.p=newPrice;
+  info.v=Math.round(newPrice*info.a);
+  transactions.forEach(t=>{ if(String(t.lot)===String(lot)) t.approvedPrice=newPrice; });
+  previewLot();
+  applyStatusColors(); applyFilter(null,null);
+  updateFilterCounts(); updateStats(); updateDashboard(); renderTxBody();
+  showAlert(alert,'✅ تم تحديث السعر المعتمد للقطعة '+lot,'success');
 }
 
 function submitDeal(){
@@ -52858,12 +52911,13 @@ function submitDeal(){
   } else {
     transactions.unshift({lot:parseInt(lot),buyer,type:info.t,block:info.b,status,value,salePrice,approvedPrice:info.p,date,notes});
   }
-  applyStatusColors(); applyFilter(currentFilter,null);
+  applyStatusColors(); applyFilter(null,null);
   updateFilterCounts(); updateStats(); updateDashboard(); renderTxBody();
   showAlert(alert,'✅ تم تسجيل الصفقة بنجاح — قطعة '+lot,'success');
   document.getElementById('inp-lot').value='';
   document.getElementById('inp-buyer').value='';
   document.getElementById('inp-price').value='';
+  const adminPriceInput=document.getElementById('inp-default-price'); if(adminPriceInput) adminPriceInput.value='';
   document.getElementById('inp-notes').value='';
   document.getElementById('lotPreview').classList.remove('show');
 }
