@@ -52798,6 +52798,7 @@ function quickUpdate(lot,st){
   }
   applyStatusColors(); applyFilter(null,null);
   updateFilterCounts(); updateStats(); closePopup(); renderTxBody(); updateDashboard();
+  saveAppState();
 }
 
 // ── SALE / RESERVE MODAL ──
@@ -52855,6 +52856,7 @@ function submitSaleModal(){
   });
   applyStatusColors(); applyFilter(null,null);
   updateFilterCounts(); updateStats(); updateDashboard(); renderTxBody();
+  saveAppState();
   closeSaleModal();
 }
 
