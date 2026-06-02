@@ -326,11 +326,23 @@ body::before{
 .sb-available{background:rgba(107,140,218,.15);color:#8aaaf0;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;border:1px solid rgba(107,140,218,.25)}
 
 /* Polygon hover */
-.lot-poly{cursor:pointer;transition:opacity .15s}
-.lot-poly:hover{opacity:.65;stroke:#fff!important;stroke-width:1.5px!important}
-.lot-status-sold{fill:var(--teal)!important;fill-opacity:.85!important}
-.lot-status-reserved{fill:var(--purple)!important;fill-opacity:.85!important}
-.lot-dimmed{opacity:.12!important}
+.lot-poly{cursor:pointer;transition:opacity .15s,fill .2s}
+.lot-poly:hover{opacity:.7;stroke:#fff!important;stroke-width:2px!important}
+
+/* Base type colors for vacant parcels — high contrast */
+.lot-poly[data-type="سكني"]{fill:#9aa3c0!important;fill-opacity:.95!important;stroke:#5a6580!important;stroke-width:.3px!important}
+.lot-poly[data-type="تجاري"]{fill:#f5b042!important;fill-opacity:.98!important;stroke:#8a5a14!important;stroke-width:.5px!important}
+.lot-poly[data-type="خدمات"]{fill:#8ed98a!important;fill-opacity:.95!important;stroke:#3a7536!important;stroke-width:.3px!important}
+
+/* Status overrides on top of base type colors */
+.lot-poly.lot-status-sold{fill:#d32f2f!important;fill-opacity:.95!important;stroke:#7a0000!important;stroke-width:.5px!important}
+.lot-poly.lot-status-reserved{fill:#2e8b57!important;fill-opacity:.95!important;stroke:#0d4a2a!important;stroke-width:.5px!important}
+
+.lot-shape{fill:#3a3d6b!important;fill-opacity:.45!important;stroke:#5a5e8a!important;stroke-width:.3px!important;cursor:help}
+.lot-dimmed{opacity:.10!important}
+
+/* Hide decorative red overlays (st26) that block parcel colors */
+.decorative-overlay{display:none!important}
 
 /* ══ DASHBOARD ══ */
 #dashPage{flex-direction:column;overflow-y:auto;padding:24px}
@@ -499,6 +511,7 @@ body::before{
 @media(max-width:1100px){.kpi-grid{grid-template-columns:repeat(2,1fr)}.dash-grid{grid-template-columns:1fr 1fr}.report-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:800px){.input-grid{grid-template-columns:1fr}}
 </style>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
 
@@ -692,18 +705,26 @@ body::before{
       </div>
 
       <div class="sidebar-section">
-        <div class="sidebar-section-title">بحث عن قطعة</div>
-        <input class="search-input" id="mapSearch" placeholder="🔍 رقم القطعة..." oninput="searchOnMap()">
-        <div class="search-result" id="searchResult"></div>
+        <div class="sidebar-section-title">🔍 بحث بالقطعة</div>
+        <input class="search-input" id="parcelSearch" placeholder="رقم القطعة أو البلوك..." oninput="searchByParcel()">
+        <div class="search-result" id="parcelSearchResult"></div>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-section-title">👤 بحث بالعميل</div>
+        <input class="search-input" id="customerSearch" placeholder="اسم، جوال، رقم هوية..." oninput="searchByCustomer()">
+        <div class="search-result" id="customerSearchResult"></div>
       </div>
 
       <div class="sidebar-section">
         <div class="sidebar-section-title">المفتاح</div>
         <div style="display:flex;flex-direction:column;gap:7px">
-          <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted)"><div style="width:12px;height:12px;border-radius:3px;background:#c4c4d5"></div> سكني — متاح</div>
-          <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted)"><div style="width:12px;height:12px;border-radius:3px;background:#dae2ec"></div> تجاري — متاح</div>
-          <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted)"><div style="width:12px;height:12px;border-radius:3px;background:var(--teal)"></div> مباعة</div>
-          <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted)"><div style="width:12px;height:12px;border-radius:3px;background:var(--purple)"></div> محجوزة</div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted)"><div style="width:12px;height:12px;border-radius:3px;background:#9aa3c0;border:1px solid #5a6580"></div> سكني — متاح</div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted)"><div style="width:12px;height:12px;border-radius:3px;background:#f5b042;border:1px solid #8a5a14"></div> تجاري — متاح</div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted)"><div style="width:12px;height:12px;border-radius:3px;background:#8ed98a;border:1px solid #3a7536"></div> خدمات — متاح</div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted)"><div style="width:12px;height:12px;border-radius:3px;background:#d32f2f"></div> مباعة</div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted)"><div style="width:12px;height:12px;border-radius:3px;background:#2e8b57"></div> محجوزة</div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted)"><div style="width:12px;height:12px;border-radius:3px;background:#3a3d6b"></div> غير مرتبطة بالخريطة</div>
         </div>
       </div>
     </div>
@@ -847,6 +868,51 @@ body::before{
   <!-- REPORTS PAGE -->
   <div class="page" id="reportsPage">
     <div class="page-header"><h2>📋 التقارير</h2><p>اضغط على أي تقرير لعرض تفاصيله</p></div>
+
+    <!-- Excel Export Section -->
+    <div style="background:linear-gradient(145deg,var(--card) 0%,var(--card2) 100%);border:1px solid var(--border);border-radius:16px;padding:20px;margin-bottom:22px">
+      <div class="dash-card-title t-teal" style="margin-bottom:14px">📥 تصدير تقرير المبيعات إلى Excel</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:12px;align-items:end;flex-wrap:wrap">
+        <div>
+          <label class="form-label">📅 الفترة</label>
+          <select class="form-select" id="exportPeriod" onchange="updateExportRange()">
+            <option value="all">كل الفترات</option>
+            <option value="month">شهر محدد</option>
+            <option value="year">سنة كاملة</option>
+            <option value="custom">من / إلى</option>
+          </select>
+        </div>
+        <div id="exportMonthBox" style="display:none">
+          <label class="form-label">الشهر</label>
+          <input type="month" class="form-input" id="exportMonth">
+        </div>
+        <div id="exportYearBox" style="display:none">
+          <label class="form-label">السنة</label>
+          <input type="number" class="form-input" id="exportYear" placeholder="2026" min="2020" max="2035">
+        </div>
+        <div id="exportFromBox" style="display:none">
+          <label class="form-label">من</label>
+          <input type="date" class="form-input" id="exportFrom">
+        </div>
+        <div id="exportToBox" style="display:none">
+          <label class="form-label">إلى</label>
+          <input type="date" class="form-input" id="exportTo">
+        </div>
+        <div>
+          <label class="form-label">الحالة</label>
+          <select class="form-select" id="exportStatus">
+            <option value="all">الكل</option>
+            <option value="مباعة">مباعة فقط</option>
+            <option value="محجوز">محجوزة فقط</option>
+          </select>
+        </div>
+        <button class="btn-submit" style="white-space:nowrap;padding:11px 20px" onclick="exportExcelReport()">
+          📥 تصدير Excel
+        </button>
+      </div>
+      <div id="exportPreview" style="margin-top:12px;font-size:11px;color:var(--muted)"></div>
+    </div>
+
     <div class="report-grid">
       <div class="report-card" onclick="showReport('sales',this)">
         <div class="report-icon">💰</div>
@@ -1818,10 +1884,10 @@ const MAP_SVG = `<?xml version="1.0" encoding="UTF-8"?>
       <path class="st16 lot-poly" data-lot="2742" data-type="تجاري" d="M1241.86,730.08c-1.73-.61-3.45-1.23-5.17-1.85l-37.25-13.45-18.68,51.75,37.25,13.45c1.86.67,3.72,1.34,5.58,2l18.27-51.89Z"/>
     </g>
     <g id="LWPOLYLINE73" data-name="LWPOLYLINE">
-      <path class="st9" d="M753.39,580.61l-8.11,48.98,8.81,1.11c34.37,4.33,68.54,10.08,102.43,17.23l11.35-53.83c-35.37-7.46-71.04-13.46-106.9-17.98l-1.32-.17-6.25,4.66Z"/>
+      <path class="st9 lot-shape" d="M753.39,580.61l-8.11,48.98,8.81,1.11c34.37,4.33,68.54,10.08,102.43,17.23l11.35-53.83c-35.37-7.46-71.04-13.46-106.9-17.98l-1.32-.17-6.25,4.66Z"/>
     </g>
     <g id="LWPOLYLINE74" data-name="LWPOLYLINE">
-      <path class="st9" d="M950.16,614.24c-25.76-7.19-51.73-13.6-77.87-19.21l-11.35,53.83c24.99,5.36,49.81,11.49,74.43,18.36l14.8-52.99Z"/>
+      <path class="st9 lot-shape" d="M950.16,614.24c-25.76-7.19-51.73-13.6-77.87-19.21l-11.35,53.83c24.99,5.36,49.81,11.49,74.43,18.36l14.8-52.99Z"/>
     </g>
     <g id="LWPOLYLINE75" data-name="LWPOLYLINE">
       <path class="st15" d="M993.88,632.01l-2.93-5.66c-12.1-3.8-24.25-7.43-36.45-10.89l-14.8,52.99c13.02,3.69,25.98,7.58,38.87,11.68l15.32-48.13Z"/>
@@ -1830,16 +1896,16 @@ const MAP_SVG = `<?xml version="1.0" encoding="UTF-8"?>
       <path class="st10" d="M1069.16,653.36l-26.14-9.44c-8.75-3.16-17.52-6.22-26.34-9.19l-5.64,2.86-15.32,48.13c9.58,3.2,19.12,6.51,28.61,9.94l26.14,9.44,18.68-51.75Z"/>
     </g>
     <g id="LWPOLYLINE77" data-name="LWPOLYLINE">
-      <rect class="st21" x="1130.78" y="699.86" width="55.02" height="58.62" transform="translate(79.1225 1571.0279) rotate(-70.149)"/>
+      <rect class="st21 lot-shape" x="1130.78" y="699.86" width="55.02" height="58.62" transform="translate(79.1225 1571.0279) rotate(-70.149)"/>
     </g>
     <g id="LWPOLYLINE78" data-name="LWPOLYLINE">
       <path class="st13" d="M1293.22,747.14c-15.8-4.87-31.51-10.06-47.1-15.55l-18.27,51.89c15.11,5.32,30.31,10.36,45.61,15.13l5.57-2.99,14.19-48.48Z"/>
     </g>
     <g id="LWPOLYLINE79" data-name="LWPOLYLINE">
-      <path class="st9" d="M1420,779.14c-36.88-7.3-73.42-16.24-109.5-26.81l-14.19,48.47,3.06,5.59c36.31,10.5,73.07,19.42,110.15,26.76l10.48-54.01Z"/>
+      <path class="st9 lot-shape" d="M1420,779.14c-36.88-7.3-73.42-16.24-109.5-26.81l-14.19,48.47,3.06,5.59c36.31,10.5,73.07,19.42,110.15,26.76l10.48-54.01Z"/>
     </g>
     <g id="LWPOLYLINE80" data-name="LWPOLYLINE">
-      <path class="st9" d="M1538.58,797.19l-31.65-3.99c-27.64-3.49-55.16-7.89-82.51-13.2l-10.48,54.01c28.54,5.54,57.26,10.13,86.11,13.77l29.8,3.76c3.1-18.09,6.01-36.2,8.73-54.35Z"/>
+      <path class="st9 lot-shape" d="M1538.58,797.19l-31.65-3.99c-27.64-3.49-55.16-7.89-82.51-13.2l-10.48,54.01c28.54,5.54,57.26,10.13,86.11,13.77l29.8,3.76c3.1-18.09,6.01-36.2,8.73-54.35Z"/>
     </g>
     <g id="LWPOLYLINE81" data-name="LWPOLYLINE">
       <rect class="st16 lot-poly" data-lot="12" data-type="تجاري" x="1282.12" y="271.17" width="54.11" height="27.06" transform="translate(800.8117 1524.2813) rotate(-79.9695)"/>
@@ -1941,7 +2007,7 @@ const MAP_SVG = `<?xml version="1.0" encoding="UTF-8"?>
       <rect class="st16 lot-poly" data-lot="1329" data-type="تجاري" x="1189.27" y="1798.54" width="27.06" height="54.11" transform="translate(-969.4904 2071.938) rotate(-63.0908)"/>
     </g>
     <g id="LWPOLYLINE114" data-name="LWPOLYLINE">
-      <polygon class="st9" points="1132.18 1894.98 1012.45 1833.16 977.28 1901.28 1097.49 1963.35 1132.18 1894.98"/>
+      <polygon class="st9 lot-shape" points="1132.18 1894.98 1012.45 1833.16 977.28 1901.28 1097.49 1963.35 1132.18 1894.98"/>
     </g>
     <g id="LWPOLYLINE115" data-name="LWPOLYLINE">
       <rect class="st16 lot-poly" data-lot="2002" data-type="تجاري" x="1132.67" y="1910.06" width="27.06" height="54.11" transform="translate(-1099.9262 2082.5137) rotate(-63.0908)"/>
@@ -1950,13 +2016,13 @@ const MAP_SVG = `<?xml version="1.0" encoding="UTF-8"?>
       <polygon class="st16 lot-poly" data-lot="2001" data-type="تجاري" points="1185.59 1907.33 1142.31 1884.99 1128.19 1912.81 1176.45 1937.3 1187.95 1914.64 1185.59 1907.33"/>
     </g>
     <g id="LWPOLYLINE117" data-name="LWPOLYLINE">
-      <rect class="st21" x="782.72" y="1743.65" width="76.66" height="67.64" transform="translate(-1134.998 1691.5001) rotate(-62.6902)"/>
+      <rect class="st21 lot-shape" x="782.72" y="1743.65" width="76.66" height="67.64" transform="translate(-1134.998 1691.5001) rotate(-62.6902)"/>
     </g>
     <g id="LWPOLYLINE118" data-name="LWPOLYLINE">
       <polygon class="st16 lot-poly" data-lot="2743" data-type="تجاري" points="923.85 1787.41 872.7 1761 837.52 1829.11 884.67 1853.46 890.75 1851.52 923.85 1787.41"/>
     </g>
     <g id="LWPOLYLINE119" data-name="LWPOLYLINE">
-      <polygon class="st9" points="939.88 1795.69 906.78 1859.8 908.71 1865.87 973.27 1899.21 1008.45 1831.09 939.88 1795.69"/>
+      <polygon class="st9 lot-shape" points="939.88 1795.69 906.78 1859.8 908.71 1865.87 973.27 1899.21 1008.45 1831.09 939.88 1795.69"/>
     </g>
     <g id="LWPOLYLINE120" data-name="LWPOLYLINE">
       <rect class="st12 lot-shape" x="637.67" y="1650.14" width="76.66" height="74.41" transform="translate(-1133.4215 1513.839) rotate(-62.6902)"/>
@@ -1977,7 +2043,7 @@ const MAP_SVG = `<?xml version="1.0" encoding="UTF-8"?>
       <rect class="st12 lot-poly" data-lot="1729" data-type="سكني" x="924.74" y="1465.34" width="22.55" height="32.47" transform="translate(-809.7675 1634.6685) rotate(-62.7281)"/>
     </g>
     <g id="LWPOLYLINE126" data-name="LWPOLYLINE">
-      <polygon class="st9" points="891.56 1603.25 833.84 1573.5 792.53 1653.62 850.23 1683.42 891.56 1603.25"/>
+      <polygon class="st9 lot-shape" points="891.56 1603.25 833.84 1573.5 792.53 1653.62 850.23 1683.42 891.56 1603.25"/>
     </g>
     <g id="LWPOLYLINE127" data-name="LWPOLYLINE">
       <rect class="st12 lot-poly" data-lot="1500" data-type="سكني" x="1029.97" y="1525.53" width="13.53" height="25.25" transform="translate(-805.4917 1754.8411) rotate(-62.7281)"/>
@@ -2055,7 +2121,7 @@ const MAP_SVG = `<?xml version="1.0" encoding="UTF-8"?>
       <path class="st12 lot-poly" data-lot="1003" data-type="سكني" d="M1030.64,939.15l-24.08-3.64c-.71,4.67-1.38,9.34-2.03,14.02l24.12,3.34c.63-4.58,1.3-9.15,1.99-13.72Z"/>
     </g>
     <g id="LWPOLYLINE152" data-name="LWPOLYLINE">
-      <path class="st21" d="M1273.72,1021.06c-14.44-3.82-28.82-7.85-43.15-12.09l-5.07,40.27,39.26,4.94c3.06-11.02,6.04-22.06,8.95-33.12Z"/>
+      <path class="st21 lot-shape" d="M1273.72,1021.06c-14.44-3.82-28.82-7.85-43.15-12.09l-5.07,40.27,39.26,4.94c3.06-11.02,6.04-22.06,8.95-33.12Z"/>
     </g>
     <g id="LWPOLYLINE153" data-name="LWPOLYLINE">
       <rect class="st12 lot-poly" data-lot="1270" data-type="سكني" x="985.02" y="1151.86" width="27.06" height="13.53" transform="translate(-275.6355 2004.7667) rotate(-82.8307)"/>
@@ -2127,7 +2193,7 @@ const MAP_SVG = `<?xml version="1.0" encoding="UTF-8"?>
       <rect class="st12 lot-poly" data-lot="2397" data-type="سكني" x="507.41" y="2204.02" width="22.55" height="32.47" transform="translate(-1692.4378 1663.9332) rotate(-62.7281)"/>
     </g>
     <g id="LWPOLYLINE176" data-name="LWPOLYLINE">
-      <polygon class="st9" points="767.58 1843.75 709.88 1813.95 668.53 1894.16 726.25 1923.91 767.58 1843.75"/>
+      <polygon class="st9 lot-shape" points="767.58 1843.75 709.88 1813.95 668.53 1894.16 726.25 1923.91 767.58 1843.75"/>
     </g>
     <g id="LWPOLYLINE177" data-name="LWPOLYLINE">
       <rect class="st12 lot-poly" data-lot="2369" data-type="سكني" x="654.12" y="1919.43" width="22.55" height="32.47" transform="translate(-1359.9998 1640.1494) rotate(-62.7281)"/>
@@ -2493,7 +2559,7 @@ const MAP_SVG = `<?xml version="1.0" encoding="UTF-8"?>
       <polygon class="st12 lot-poly" data-lot="1920" data-type="سكني" points="813.9 1368.1 790.08 1365.11 785.89 1367.31 778.99 1380.71 801.43 1392.28 813.9 1368.1"/>
     </g>
     <g id="LWPOLYLINE298" data-name="LWPOLYLINE">
-      <polygon class="st21" points="762.44 1361.63 721.47 1356.48 717.28 1358.68 707.03 1378.56 743.91 1397.57 762.44 1361.63"/>
+      <polygon class="st21 lot-shape" points="762.44 1361.63 721.47 1356.48 717.28 1358.68 707.03 1378.56 743.91 1397.57 762.44 1361.63"/>
     </g>
     <g id="LWPOLYLINE299" data-name="LWPOLYLINE">
       <polygon class="st12 lot-poly" data-lot="1964" data-type="سكني" points="690.01 1450.96 673.97 1442.7 665.17 1459.76 666.42 1463.65 679.88 1470.61 690.01 1450.96"/>
@@ -2628,7 +2694,7 @@ const MAP_SVG = `<?xml version="1.0" encoding="UTF-8"?>
       <path class="st12 lot-shape" d="M1182.38,1059.68l-17-2.14-3.26,25.95c4.74.4,9.48.79,14.22,1.17l3.24-2.64,2.81-22.34Z"/>
     </g>
     <g id="LWPOLYLINE343" data-name="LWPOLYLINE">
-      <path class="st12 lot-poly" data-lot="843" data-type="سكني" d="M1218.47,1069.06l-22.37-2.81-2.12,16.86,2.52,3.07c6.55.47,13.1.91,19.65,1.32l2.32-18.44Z"/>
+      <path class="st12 lot-shape" d="M1218.47,1069.06l-22.37-2.81-2.12,16.86,2.52,3.07c6.55.47,13.1.91,19.65,1.32l2.32-18.44Z"/>
     </g>
     <g id="LWPOLYLINE344" data-name="LWPOLYLINE">
       <polygon class="st12 lot-poly" data-lot="1123" data-type="سكني" points="951.92 1041.86 927.75 1038.82 926.43 1049.38 928.93 1052.6 950.23 1055.28 951.92 1041.86"/>
@@ -2799,7 +2865,7 @@ const MAP_SVG = `<?xml version="1.0" encoding="UTF-8"?>
       <polygon class="st12 lot-poly" data-lot="2400" data-type="سكني" points="700.17 1783.57 689.77 1778.2 677.36 1802.24 691.78 1809.69 702.11 1789.65 700.17 1783.57"/>
     </g>
     <g id="LWPOLYLINE400" data-name="LWPOLYLINE">
-      <path class="st21" d="M947.28,416.65c-11.19-1.2-22.39-2.36-33.59-3.47l-5.4,32.59,2.35,3.46c10.81,2.37,21.59,4.87,32.34,7.48l4.3-40.06Z"/>
+      <path class="st21 lot-shape" d="M947.28,416.65c-11.19-1.2-22.39-2.36-33.59-3.47l-5.4,32.59,2.35,3.46c10.81,2.37,21.59,4.87,32.34,7.48l4.3-40.06Z"/>
     </g>
     <g id="LWPOLYLINE401" data-name="LWPOLYLINE">
       <path class="st12 lot-poly" data-lot="547" data-type="سكني" d="M1144.19,638.04l-25.16-7.9-5.51,15.27,21.1,7.62,5.65-2.75c1.33-4.07,2.64-8.15,3.92-12.24Z"/>
@@ -3054,10 +3120,10 @@ const MAP_SVG = `<?xml version="1.0" encoding="UTF-8"?>
       <path class="st12 lot-poly" data-lot="667" data-type="سكني" d="M1469.97,956.59l-7.05-1.53-16.75-3.63c-.96,4.41-1.92,8.81-2.9,13.21l23.77,5.29c.99-4.44,1.96-8.89,2.93-13.34Z"/>
     </g>
     <g id="LWPOLYLINE485" data-name="LWPOLYLINE">
-      <path class="st21" d="M913.31,931.11c-15.95-5.32-32.03-10.24-48.23-14.75l-5.73,34.6,50.24,8.32.89-7.06c.89-7.04,1.83-14.08,2.84-21.11Z"/>
+      <path class="st21 lot-shape" d="M913.31,931.11c-15.95-5.32-32.03-10.24-48.23-14.75l-5.73,34.6,50.24,8.32.89-7.06c.89-7.04,1.83-14.08,2.84-21.11Z"/>
     </g>
     <g id="LWPOLYLINE486" data-name="LWPOLYLINE">
-      <path class="st21" d="M1415.11,480.2l-47.96-8.48-5.22,31.13,52.05,8.73c.44-10.46.82-20.91,1.13-31.38Z"/>
+      <path class="st21 lot-shape" d="M1415.11,480.2l-47.96-8.48-5.22,31.13,52.05,8.73c.44-10.46.82-20.91,1.13-31.38Z"/>
     </g>
     <g id="LWPOLYLINE487" data-name="LWPOLYLINE">
       <rect class="st11 lot-shape" x="1070.06" y="657.24" width="55.02" height="71.25" transform="translate(73.167 1489.9319) rotate(-70.149)"/>
@@ -4866,7 +4932,7 @@ const MAP_SVG = `<?xml version="1.0" encoding="UTF-8"?>
       <polygon class="st11 lot-shape" points="1095.62 1538.09 1079.08 1570.16 1114.76 1588.55 1131.09 1556.38 1095.62 1538.09"/>
     </g>
     <g id="LWPOLYLINE1089" data-name="LWPOLYLINE">
-      <path class="st21" d="M1149.45,1520.18l-35.25-18.17c-.57,1.11-1.14,2.23-1.71,3.34l-16.88,32.74,35.47,18.29,18.37-36.19Z"/>
+      <path class="st21 lot-shape" d="M1149.45,1520.18l-35.25-18.17c-.57,1.11-1.14,2.23-1.71,3.34l-16.88,32.74,35.47,18.29,18.37-36.19Z"/>
     </g>
     <g id="LWPOLYLINE1090" data-name="LWPOLYLINE">
       <rect class="st12 lot-poly" data-lot="1558" data-type="سكني" x="1124.35" y="1679.2" width="13.53" height="25.25" transform="translate(-889.4509 1934.788) rotate(-63.0908)"/>
@@ -5505,7 +5571,7 @@ const MAP_SVG = `<?xml version="1.0" encoding="UTF-8"?>
       <rect class="st12 lot-poly" data-lot="840" data-type="سكني" x="1204.57" y="1020.59" width="14.43" height="22.55" transform="translate(36.7615 2105.3953) rotate(-82.8307)"/>
     </g>
     <g id="LWPOLYLINE1302" data-name="LWPOLYLINE">
-      <path class="st12 lot-shape" d="M1196.5,1086.18c6.55.47,13.1.91,19.65,1.32l2.32-18.44-22.37-2.81-2.12,16.86,2.52,3.07Z"/>
+      <path class="st12 lot-poly" data-lot="843" data-type="سكني" d="M1196.5,1086.18c6.55.47,13.1.91,19.65,1.32l2.32-18.44-22.37-2.81-2.12,16.86,2.52,3.07Z"/>
     </g>
     <g id="LWPOLYLINE1303" data-name="LWPOLYLINE">
       <polygon class="st12 lot-poly" data-lot="1150" data-type="سكني" points="795.85 1054.04 782.43 1052.35 779.39 1076.51 792.81 1078.2 795.85 1054.04 795.85 1054.04"/>
@@ -6240,7 +6306,7 @@ const MAP_SVG = `<?xml version="1.0" encoding="UTF-8"?>
       <rect class="st12 lot-poly" data-lot="2349" data-type="سكني" x="667.42" y="2293.49" width="24.35" height="13.53" transform="translate(-1676.0733 1848.7432) rotate(-62.6902)"/>
     </g>
     <g id="LWPOLYLINE1547" data-name="LWPOLYLINE">
-      <polygon class="st12 lot-shape" points="571.41 2082.55 561.08 2102.59 589.94 2117.46 600.27 2097.42 571.41 2082.55 571.41 2082.55"/>
+      <polygon class="st12 lot-poly" data-lot="2385" data-type="سكني" points="571.41 2082.55 561.08 2102.59 589.94 2117.46 600.27 2097.42 571.41 2082.55 571.41 2082.55"/>
     </g>
     <g id="LWPOLYLINE1548" data-name="LWPOLYLINE">
       <rect class="st12 lot-poly" data-lot="2456" data-type="سكني" x="565.86" y="1941.59" width="13.53" height="25.25" transform="translate(-1426.7527 1567.7436) rotate(-62.7281)"/>
@@ -6294,7 +6360,7 @@ const MAP_SVG = `<?xml version="1.0" encoding="UTF-8"?>
       <rect class="st12 lot-poly" data-lot="2464" data-type="سكني" x="539" y="1993.7" width="13.53" height="25.25" transform="translate(-1487.6217 1572.0984) rotate(-62.7281)"/>
     </g>
     <g id="LWPOLYLINE1565" data-name="LWPOLYLINE">
-      <rect class="st12 lot-poly" data-lot="2385" data-type="سكني" x="569.4" y="2083.77" width="22.55" height="32.47" transform="translate(-1551.9711 1653.8837) rotate(-62.7281)"/>
+      <rect class="st12 lot-shape" x="569.4" y="2083.77" width="22.55" height="32.47" transform="translate(-1551.9711 1653.8837) rotate(-62.7281)"/>
     </g>
     <g id="LWPOLYLINE1566" data-name="LWPOLYLINE">
       <rect class="st12 lot-poly" data-lot="2384" data-type="سكني" x="598.26" y="2098.65" width="22.55" height="32.47" transform="translate(-1549.5592 1687.5957) rotate(-62.7281)"/>
@@ -6675,7 +6741,7 @@ const MAP_SVG = `<?xml version="1.0" encoding="UTF-8"?>
       <rect class="st12 lot-poly" data-lot="2719" data-type="سكني" x="264.35" y="1944.9" width="13.53" height="27.06" transform="translate(-1593.8459 1302.0328) rotate(-62.7281)"/>
     </g>
     <g id="LWPOLYLINE1692" data-name="LWPOLYLINE">
-      <rect class="st21" x="432" y="1901.62" width="36.08" height="41.49" transform="translate(-1464.8553 1441.52) rotate(-62.7281)"/>
+      <rect class="st21 lot-shape" x="432" y="1901.62" width="36.08" height="41.49" transform="translate(-1464.8553 1441.52) rotate(-62.7281)"/>
     </g>
     <g id="LWPOLYLINE1693" data-name="LWPOLYLINE">
       <polygon class="st12 lot-poly" data-lot="2722" data-type="سكني" points="273.85 1982.67 267.65 1994.69 291.7 2007.09 297.9 1995.06 273.85 1982.67 273.85 1982.67"/>
@@ -7503,7 +7569,7 @@ const MAP_SVG = `<?xml version="1.0" encoding="UTF-8"?>
       <polygon class="st12 lot-poly" data-lot="2301" data-type="سكني" points="677.26 2117.36 671.06 2129.39 693.5 2140.96 699.7 2128.93 677.26 2117.36 677.26 2117.36"/>
     </g>
     <g id="LWPOLYLINE1968" data-name="LWPOLYLINE">
-      <polygon class="st21" points="842.09 2125.8 803.02 2105.66 787.73 2135.32 826.98 2155.56 842.09 2125.8"/>
+      <polygon class="st21 lot-shape" points="842.09 2125.8 803.02 2105.66 787.73 2135.32 826.98 2155.56 842.09 2125.8"/>
     </g>
     <g id="LWPOLYLINE1969" data-name="LWPOLYLINE">
       <polygon class="st12 lot-poly" data-lot="2299" data-type="سكني" points="705.9 2116.91 683.46 2105.34 677.26 2117.36 699.7 2128.93 705.9 2116.91 705.9 2116.91"/>
@@ -10273,376 +10339,376 @@ const MAP_SVG = `<?xml version="1.0" encoding="UTF-8"?>
     </g>
     <path class="st26" d="M1266.81,74.37l.31-.31"/>
     <g id="LWPOLYLINE2891" data-name="LWPOLYLINE">
-      <polygon class="st26" points="670.6 1890.15 672.6 1891.18 671.57 1893.19 670.53 1895.19 668.53 1894.16 670.6 1890.15"/>
+      <polygon class="st26 decorative-overlay" points="670.6 1890.15 672.6 1891.18 671.57 1893.19 670.53 1895.19 668.53 1894.16 670.6 1890.15"/>
     </g>
     <g id="LWPOLYLINE2892" data-name="LWPOLYLINE">
-      <rect class="st26" x="1267.5" y="1391.34" width="2.25" height="4.51" transform="translate(-188.4607 2588.7566) rotate(-87.0475)"/>
+      <rect class="st26 decorative-overlay" x="1267.5" y="1391.34" width="2.25" height="4.51" transform="translate(-188.4607 2588.7566) rotate(-87.0475)"/>
     </g>
     <g id="LWPOLYLINE2893" data-name="LWPOLYLINE">
-      <rect class="st26" x="1587.74" y="358.24" width="2.25" height="4.51" transform="translate(957.138 1862.2881) rotate(-79.9695)"/>
+      <rect class="st26 decorative-overlay" x="1587.74" y="358.24" width="2.25" height="4.51" transform="translate(957.138 1862.2881) rotate(-79.9695)"/>
     </g>
     <g id="LWPOLYLINE2894" data-name="LWPOLYLINE">
-      <polyline class="st26" points="1533.16 351.79 1533.55 349.57 1537.99 350.36 1537.6 352.58"/>
+      <polyline class="st26 decorative-overlay" points="1533.16 351.79 1533.55 349.57 1537.99 350.36 1537.6 352.58"/>
     </g>
     <g id="LWPOLYLINE2895" data-name="LWPOLYLINE">
-      <rect class="st26" x="1481.16" y="339.39" width="2.25" height="4.51" transform="translate(887.6883 1741.7751) rotate(-79.9695)"/>
+      <rect class="st26 decorative-overlay" x="1481.16" y="339.39" width="2.25" height="4.51" transform="translate(887.6883 1741.7751) rotate(-79.9695)"/>
     </g>
     <g id="LWPOLYLINE2896" data-name="LWPOLYLINE">
-      <rect class="st26" x="1430.1" y="330.36" width="2.25" height="4.51" transform="translate(854.4103 1684.0294) rotate(-79.9695)"/>
+      <rect class="st26 decorative-overlay" x="1430.1" y="330.36" width="2.25" height="4.51" transform="translate(854.4103 1684.0294) rotate(-79.9695)"/>
     </g>
     <g id="LWPOLYLINE2897" data-name="LWPOLYLINE">
       <line class="st26" x1="1533.16" y1="351.79" x2="1537.6" y2="352.58"/>
     </g>
     <g id="LWPOLYLINE2898" data-name="LWPOLYLINE">
-      <polyline class="st26" points="1369.25 320.51 1368.86 322.73 1373.3 323.52 1373.69 321.29 1369.25 320.51"/>
+      <polyline class="st26 decorative-overlay" points="1369.25 320.51 1368.86 322.73 1373.3 323.52 1373.69 321.29 1369.25 320.51"/>
     </g>
     <g id="LWPOLYLINE2899" data-name="LWPOLYLINE">
-      <polyline class="st26" points="1315.96 311.08 1315.57 313.3 1320.01 314.09 1320.4 311.87 1315.96 311.08"/>
+      <polyline class="st26 decorative-overlay" points="1315.96 311.08 1315.57 313.3 1320.01 314.09 1320.4 311.87 1315.96 311.08"/>
     </g>
     <g id="LWPOLYLINE2900" data-name="LWPOLYLINE">
-      <polyline class="st26" points="1262.68 301.66 1262.28 303.88 1266.72 304.66 1267.12 302.44 1262.68 301.66"/>
+      <polyline class="st26 decorative-overlay" points="1262.68 301.66 1262.28 303.88 1266.72 304.66 1267.12 302.44 1262.68 301.66"/>
     </g>
     <g id="LWPOLYLINE2901" data-name="LWPOLYLINE">
-      <polyline class="st26" points="1572.21 418.59 1574.46 418.61 1574.44 423.12 1572.19 423.1 1572.21 418.59"/>
+      <polyline class="st26 decorative-overlay" points="1572.21 418.59 1574.46 418.61 1574.44 423.12 1572.19 423.1 1572.21 418.59"/>
     </g>
     <g id="LWPOLYLINE2902" data-name="LWPOLYLINE">
-      <polyline class="st26" points="1571.91 447.9 1574.17 447.94 1574.09 452.45 1571.84 452.41 1571.91 447.9"/>
+      <polyline class="st26 decorative-overlay" points="1571.91 447.9 1574.17 447.94 1574.09 452.45 1571.84 452.41 1571.91 447.9"/>
     </g>
     <g id="LWPOLYLINE2903" data-name="LWPOLYLINE">
-      <path class="st26" d="M1570.5,502l2.25.08c-.06,1.5-.11,3-.17,4.51l-2.25-.08c.05-1.5.11-3,.17-4.51"/>
+      <path class="st26 decorative-overlay" d="M1570.5,502l2.25.08c-.06,1.5-.11,3-.17,4.51l-2.25-.08c.05-1.5.11-3,.17-4.51"/>
     </g>
     <g id="LWPOLYLINE2904" data-name="LWPOLYLINE">
-      <path class="st26" d="M1567.99,556.05l2.25.13-.26,4.5-2.25-.13c.09-1.5.17-3,.26-4.5"/>
+      <path class="st26 decorative-overlay" d="M1567.99,556.05l2.25.13-.26,4.5-2.25-.13c.09-1.5.17-3,.26-4.5"/>
     </g>
     <g id="LWPOLYLINE2905" data-name="LWPOLYLINE">
-      <path class="st26" d="M1564.01,614.54l2.25.18c-.12,1.5-.24,3-.36,4.5l-2.25-.18c.12-1.5.24-3,.36-4.5"/>
+      <path class="st26 decorative-overlay" d="M1564.01,614.54l2.25.18c-.12,1.5-.24,3-.36,4.5l-2.25-.18c.12-1.5.24-3,.36-4.5"/>
     </g>
     <g id="LWPOLYLINE2906" data-name="LWPOLYLINE">
-      <path class="st26" d="M1559.19,668.44l2.24.23c-.15,1.5-.3,2.99-.45,4.49l-2.24-.23c.15-1.5.3-2.99.45-4.49"/>
+      <path class="st26 decorative-overlay" d="M1559.19,668.44l2.24.23c-.15,1.5-.3,2.99-.45,4.49l-2.24-.23c.15-1.5.3-2.99.45-4.49"/>
     </g>
     <g id="LWPOLYLINE2907" data-name="LWPOLYLINE">
-      <path class="st26" d="M1553.27,722.23l2.24.27c-.18,1.49-.36,2.98-.54,4.48l-2.24-.27c.18-1.49.36-2.98.54-4.48Z"/>
+      <path class="st26 decorative-overlay" d="M1553.27,722.23l2.24.27c-.18,1.49-.36,2.98-.54,4.48l-2.24-.27c.18-1.49.36-2.98.54-4.48Z"/>
     </g>
     <g id="LWPOLYLINE2908" data-name="LWPOLYLINE">
-      <polyline class="st26" points="1252.16 489.4 1254.38 489.78 1254.01 492 1253.64 494.23 1251.41 493.85 1251.79 491.63 1252.16 489.4"/>
+      <polyline class="st26 decorative-overlay" points="1252.16 489.4 1254.38 489.78 1254.01 492 1253.64 494.23 1251.41 493.85 1251.79 491.63 1252.16 489.4"/>
     </g>
     <g id="LWPOLYLINE2909" data-name="LWPOLYLINE">
-      <polyline class="st26" points="1473.2 702.64 1472.84 704.86 1475.06 705.23 1477.29 705.59 1477.65 703.36 1475.43 703 1473.2 702.64"/>
+      <polyline class="st26 decorative-overlay" points="1473.2 702.64 1472.84 704.86 1475.06 705.23 1477.29 705.59 1477.65 703.36 1475.43 703 1473.2 702.64"/>
     </g>
     <g id="LWPOLYLINE2910" data-name="LWPOLYLINE">
-      <path class="st26" d="M1341.28,672.98l-.62,2.17c-1.45-.41-2.89-.83-4.33-1.25l.62-2.17c1.44.42,2.89.84,4.33,1.25"/>
+      <path class="st26 decorative-overlay" d="M1341.28,672.98l-.62,2.17c-1.45-.41-2.89-.83-4.33-1.25l.62-2.17c1.44.42,2.89.84,4.33,1.25"/>
     </g>
     <g id="LWPOLYLINE2911" data-name="LWPOLYLINE">
-      <path class="st26" d="M1173.85,289.16l.35-2.23c1.49.23,2.97.46,4.46.7l-.35,2.23c-1.48-.23-2.97-.47-4.46-.7"/>
+      <path class="st26 decorative-overlay" d="M1173.85,289.16l.35-2.23c1.49.23,2.97.46,4.46.7l-.35,2.23c-1.48-.23-2.97-.47-4.46-.7"/>
     </g>
     <g id="LWPOLYLINE2912" data-name="LWPOLYLINE">
-      <path class="st26" d="M1120.33,281.14l.32-2.23c1.49.21,2.98.43,4.46.64l-.32,2.23c-1.49-.22-2.98-.43-4.46-.64"/>
+      <path class="st26 decorative-overlay" d="M1120.33,281.14l.32-2.23c1.49.21,2.98.43,4.46.64l-.32,2.23c-1.49-.22-2.98-.43-4.46-.64"/>
     </g>
     <g id="LWPOLYLINE2913" data-name="LWPOLYLINE">
-      <path class="st26" d="M1066.72,273.77l.29-2.24c1.49.2,2.98.39,4.47.59l-.29,2.24c-1.49-.2-2.98-.39-4.47-.59"/>
+      <path class="st26 decorative-overlay" d="M1066.72,273.77l.29-2.24c1.49.2,2.98.39,4.47.59l-.29,2.24c-1.49-.2-2.98-.39-4.47-.59"/>
     </g>
     <g id="LWPOLYLINE2914" data-name="LWPOLYLINE">
-      <path class="st26" d="M1020.01,265.63l-.27,2.24c-1.49-.18-2.99-.36-4.48-.54l.27-2.24c1.49.18,2.99.36,4.48.54Z"/>
+      <path class="st26 decorative-overlay" d="M1020.01,265.63l-.27,2.24c-1.49-.18-2.99-.36-4.48-.54l.27-2.24c1.49.18,2.99.36,4.48.54Z"/>
     </g>
     <g id="LWPOLYLINE2915" data-name="LWPOLYLINE">
-      <path class="st26" d="M954.82,260.54l.24-2.24c1.49.16,2.99.32,4.48.47l-.24,2.24c-1.49-.16-2.99-.32-4.48-.47"/>
+      <path class="st26 decorative-overlay" d="M954.82,260.54l.24-2.24c1.49.16,2.99.32,4.48.47l-.24,2.24c-1.49-.16-2.99-.32-4.48-.47"/>
     </g>
     <g id="LWPOLYLINE2916" data-name="LWPOLYLINE">
-      <path class="st26" d="M905.46,255.62c-1.5-.14-2.99-.28-4.49-.42l.21-2.24c1.5.14,2.99.28,4.49.42l-.21,2.24Z"/>
+      <path class="st26 decorative-overlay" d="M905.46,255.62c-1.5-.14-2.99-.28-4.49-.42l.21-2.24c1.5.14,2.99.28,4.49.42l-.21,2.24Z"/>
     </g>
     <g id="LWPOLYLINE2917" data-name="LWPOLYLINE">
-      <path class="st26" d="M851.73,248.64l-.18,2.25c-1.5-.12-3-.24-4.49-.36l.18-2.25c1.5.12,3,.24,4.49.36Z"/>
+      <path class="st26 decorative-overlay" d="M851.73,248.64l-.18,2.25c-1.5-.12-3-.24-4.49-.36l.18-2.25c1.5.12,3,.24,4.49.36Z"/>
     </g>
     <g id="LWPOLYLINE2918" data-name="LWPOLYLINE">
-      <polyline class="st26" points="1134.24 448.19 1134.99 443.75 1137.21 444.12 1136.84 446.34 1136.46 448.57 1134.24 448.19"/>
+      <polyline class="st26 decorative-overlay" points="1134.24 448.19 1134.99 443.75 1137.21 444.12 1136.84 446.34 1136.46 448.57 1134.24 448.19"/>
     </g>
     <g id="LWPOLYLINE2919" data-name="LWPOLYLINE">
-      <path class="st26" d="M1593.7,824.49l-2.23-.35c-.23,1.48-.47,2.97-.7,4.45l2.23.35c.24-1.48.47-2.97.7-4.45Z"/>
+      <path class="st26 decorative-overlay" d="M1593.7,824.49l-2.23-.35c-.23,1.48-.47,2.97-.7,4.45l2.23.35c.24-1.48.47-2.97.7-4.45Z"/>
     </g>
     <g id="LWPOLYLINE2920" data-name="LWPOLYLINE">
-      <polyline class="st26" points="827.07 436.61 829.3 436.98 828.93 439.2 828.56 441.43 826.34 441.06 826.71 438.83 827.07 436.61"/>
+      <polyline class="st26 decorative-overlay" points="827.07 436.61 829.3 436.98 828.93 439.2 828.56 441.43 826.34 441.06 826.71 438.83 827.07 436.61"/>
     </g>
     <g id="LWPOLYLINE2921" data-name="LWPOLYLINE">
-      <path class="st26" d="M1014.74,561.51l.68-2.15c-1.43-.45-2.87-.91-4.3-1.36l-.68,2.15c1.43.45,2.87.9,4.3,1.36Z"/>
+      <path class="st26 decorative-overlay" d="M1014.74,561.51l.68-2.15c-1.43-.45-2.87-.91-4.3-1.36l-.68,2.15c1.43.45,2.87.9,4.3,1.36Z"/>
     </g>
     <g id="LWPOLYLINE2922" data-name="LWPOLYLINE">
-      <rect class="st26" x="1182.14" y="763.98" width="2.25" height="4.51" transform="translate(60.7548 1618.9962) rotate(-70.149)"/>
+      <rect class="st26 decorative-overlay" x="1182.14" y="763.98" width="2.25" height="4.51" transform="translate(60.7548 1618.9962) rotate(-70.149)"/>
     </g>
     <g id="LWPOLYLINE2923" data-name="LWPOLYLINE">
-      <rect class="st26" x="1586.67" y="195.48" width="2.25" height="4.51" transform="translate(1116.529 1726.82) rotate(-79.9695)"/>
+      <rect class="st26 decorative-overlay" x="1586.67" y="195.48" width="2.25" height="4.51" transform="translate(1116.529 1726.82) rotate(-79.9695)"/>
     </g>
     <g id="LWPOLYLINE2924" data-name="LWPOLYLINE">
-      <rect class="st26" x="1533.38" y="186.06" width="2.25" height="4.51" transform="translate(1081.8041 1666.5636) rotate(-79.9695)"/>
+      <rect class="st26 decorative-overlay" x="1533.38" y="186.06" width="2.25" height="4.51" transform="translate(1081.8041 1666.5636) rotate(-79.9695)"/>
     </g>
     <g id="LWPOLYLINE2925" data-name="LWPOLYLINE">
-      <rect class="st26" x="1480.09" y="176.63" width="2.25" height="4.51" transform="translate(1047.0793 1606.3071) rotate(-79.9695)"/>
+      <rect class="st26 decorative-overlay" x="1480.09" y="176.63" width="2.25" height="4.51" transform="translate(1047.0793 1606.3071) rotate(-79.9695)"/>
     </g>
     <g id="LWPOLYLINE2926" data-name="LWPOLYLINE">
-      <rect class="st26" x="1422.36" y="166.42" width="2.25" height="4.51" transform="translate(1009.4607 1541.0293) rotate(-79.9695)"/>
+      <rect class="st26 decorative-overlay" x="1422.36" y="166.42" width="2.25" height="4.51" transform="translate(1009.4607 1541.0293) rotate(-79.9695)"/>
     </g>
     <g id="LWPOLYLINE2927" data-name="LWPOLYLINE">
-      <rect class="st26" x="1369.08" y="156.99" width="2.25" height="4.51" transform="translate(974.7358 1480.7728) rotate(-79.9695)"/>
+      <rect class="st26 decorative-overlay" x="1369.08" y="156.99" width="2.25" height="4.51" transform="translate(974.7358 1480.7728) rotate(-79.9695)"/>
     </g>
     <g id="LWPOLYLINE2928" data-name="LWPOLYLINE">
-      <rect class="st26" x="1315.79" y="147.57" width="2.25" height="4.51" transform="translate(940.011 1420.5164) rotate(-79.9695)"/>
+      <rect class="st26 decorative-overlay" x="1315.79" y="147.57" width="2.25" height="4.51" transform="translate(940.011 1420.5164) rotate(-79.9695)"/>
     </g>
     <g id="LWPOLYLINE2929" data-name="LWPOLYLINE">
       <line class="st26" x1="1290.1" y1="146.23" x2="1290.47" y2="144"/>
     </g>
     <g id="LWPOLYLINE2930" data-name="LWPOLYLINE">
-      <path class="st26" d="M1290.47,144c-1.48-.26-2.96-.51-4.44-.77l-.37,2.22c1.48.25,2.96.51,4.44.77l.37-2.22Z"/>
+      <path class="st26 decorative-overlay" d="M1290.47,144c-1.48-.26-2.96-.51-4.44-.77l-.37,2.22c1.48.25,2.96.51,4.44.77l.37-2.22Z"/>
     </g>
     <g id="LWPOLYLINE2931" data-name="LWPOLYLINE">
-      <path class="st26" d="M1190.71,127.49l-.34,2.23c1.49.23,2.97.46,4.46.69l.34-2.23c-1.49-.23-2.97-.46-4.46-.69"/>
+      <path class="st26 decorative-overlay" d="M1190.71,127.49l-.34,2.23c1.49.23,2.97.46,4.46.69l.34-2.23c-1.49-.23-2.97-.46-4.46-.69"/>
     </g>
     <g id="LWPOLYLINE2932" data-name="LWPOLYLINE">
-      <path class="st26" d="M1141.01,120.1c-1.49-.21-2.98-.43-4.46-.64l-.32,2.23c1.49.21,2.98.42,4.46.64l.32-2.23Z"/>
+      <path class="st26 decorative-overlay" d="M1141.01,120.1c-1.49-.21-2.98-.43-4.46-.64l-.32,2.23c1.49.21,2.98.42,4.46.64l.32-2.23Z"/>
     </g>
     <g id="LWPOLYLINE2933" data-name="LWPOLYLINE">
-      <path class="st26" d="M1086.47,114.9l.29-2.24c-1.49-.2-2.98-.39-4.47-.58l-.29,2.24c1.49.19,2.98.39,4.47.58Z"/>
+      <path class="st26 decorative-overlay" d="M1086.47,114.9l.29-2.24c-1.49-.2-2.98-.39-4.47-.58l-.29,2.24c1.49.19,2.98.39,4.47.58Z"/>
     </g>
     <g id="LWPOLYLINE2934" data-name="LWPOLYLINE">
-      <path class="st26" d="M1023.41,104.82l-.26,2.24c1.49.17,2.99.35,4.48.53l.26-2.24c-1.49-.18-2.99-.35-4.48-.53Z"/>
+      <path class="st26 decorative-overlay" d="M1023.41,104.82l-.26,2.24c1.49.17,2.99.35,4.48.53l.26-2.24c-1.49-.18-2.99-.35-4.48-.53Z"/>
     </g>
     <g id="LWPOLYLINE2935" data-name="LWPOLYLINE">
-      <rect class="st26" x="1560.38" y="154" width="2.25" height="4.51" transform="translate(-7.79 150.99) rotate(-5.52)"/>
+      <rect class="st26 decorative-overlay" x="1560.38" y="154" width="2.25" height="4.51" transform="translate(-7.79 150.99) rotate(-5.52)"/>
     </g>
     <g id="LWPOLYLINE2936" data-name="LWPOLYLINE">
-      <rect class="st26" x="1557.5" y="124.83" width="2.25" height="4.51" transform="translate(-5 150.58) rotate(-5.52)"/>
+      <rect class="st26 decorative-overlay" x="1557.5" y="124.83" width="2.25" height="4.51" transform="translate(-5 150.58) rotate(-5.52)"/>
     </g>
     <g id="LWPOLYLINE2937" data-name="LWPOLYLINE">
-      <rect class="st26" x="1552.18" y="70.97" width="2.25" height="4.51" transform="translate(.16 149.82) rotate(-5.52)"/>
+      <rect class="st26 decorative-overlay" x="1552.18" y="70.97" width="2.25" height="4.51" transform="translate(.16 149.82) rotate(-5.52)"/>
     </g>
     <g id="LWPOLYLINE2938" data-name="LWPOLYLINE">
-      <path class="st26" d="M951.76,417.14c-1.49-.16-2.99-.32-4.48-.48l-.24,2.24c1.49.16,2.99.32,4.48.48l.24-2.24Z"/>
+      <path class="st26 decorative-overlay" d="M951.76,417.14c-1.49-.16-2.99-.32-4.48-.48l-.24,2.24c1.49.16,2.99.32,4.48.48l.24-2.24Z"/>
     </g>
     <g id="LWPOLYLINE2939" data-name="LWPOLYLINE">
-      <path class="st26" d="M1418.8,832.65c-1.48-.28-2.95-.57-4.43-.85l-.43,2.21c1.48.29,2.95.57,4.43.85l.43-2.21Z"/>
+      <path class="st26 decorative-overlay" d="M1418.8,832.65c-1.48-.28-2.95-.57-4.43-.85l-.43,2.21c1.48.29,2.95.57,4.43.85l.43-2.21Z"/>
     </g>
     <g id="LWPOLYLINE2940" data-name="LWPOLYLINE">
-      <path class="st26" d="M1409.94,830.93c-1.47-.29-2.95-.59-4.42-.88l-.43,2.21c1.47.3,2.95.59,4.42.88l.43-2.21Z"/>
+      <path class="st26 decorative-overlay" d="M1409.94,830.93c-1.47-.29-2.95-.59-4.42-.88l-.43,2.21c1.47.3,2.95.59,4.42.88l.43-2.21Z"/>
     </g>
     <g id="LWPOLYLINE2941" data-name="LWPOLYLINE">
-      <path class="st26" d="M1232.85,782.85c-1.42-.49-2.84-.99-4.26-1.49l-.75,2.13c1.42.5,2.84,1,4.26,1.49l.75-2.13Z"/>
+      <path class="st26 decorative-overlay" d="M1232.85,782.85c-1.42-.49-2.84-.99-4.26-1.49l-.75,2.13c1.42.5,2.84,1,4.26,1.49l.75-2.13Z"/>
     </g>
     <g id="LWPOLYLINE2942" data-name="LWPOLYLINE">
-      <rect class="st26" x="1173.66" y="760.92" width="2.25" height="4.51" transform="translate(58.0329 1608.9944) rotate(-70.149)"/>
+      <rect class="st26 decorative-overlay" x="1173.66" y="760.92" width="2.25" height="4.51" transform="translate(58.0329 1608.9944) rotate(-70.149)"/>
     </g>
     <g id="LWPOLYLINE2943" data-name="LWPOLYLINE">
-      <rect class="st26" x="1047.61" y="701.03" width="2.25" height="4.51" transform="translate(31.1194 1450.8851) rotate(-70.149)"/>
+      <rect class="st26 decorative-overlay" x="1047.61" y="701.03" width="2.25" height="4.51" transform="translate(31.1194 1450.8851) rotate(-70.149)"/>
     </g>
     <g id="LWPOLYLINE2944" data-name="LWPOLYLINE">
-      <path class="st26" d="M979.25,677.99c-1.43-.46-2.87-.91-4.3-1.36l-.68,2.15c1.43.45,2.87.9,4.3,1.36l.68-2.15Z"/>
+      <path class="st26 decorative-overlay" d="M979.25,677.99c-1.43-.46-2.87-.91-4.3-1.36l-.68,2.15c1.43.45,2.87.9,4.3,1.36l.68-2.15Z"/>
     </g>
     <g id="LWPOLYLINE2945" data-name="LWPOLYLINE">
-      <path class="st26" d="M865.8,647.61c-1.47-.32-2.94-.64-4.41-.95l-.47,2.21c1.47.32,2.94.63,4.41.95l.47-2.21Z"/>
+      <path class="st26 decorative-overlay" d="M865.8,647.61c-1.47-.32-2.94-.64-4.41-.95l-.47,2.21c1.47.32,2.94.63,4.41.95l.47-2.21Z"/>
     </g>
     <g id="LWPOLYLINE2946" data-name="LWPOLYLINE">
-      <path class="st26" d="M856.98,645.72c-1.47-.31-2.94-.62-4.41-.92l-.47,2.21c1.47.3,2.94.61,4.41.92l.47-2.21Z"/>
+      <path class="st26 decorative-overlay" d="M856.98,645.72c-1.47-.31-2.94-.62-4.41-.92l-.47,2.21c1.47.3,2.94.61,4.41.92l.47-2.21Z"/>
     </g>
     <g id="LWPOLYLINE2947" data-name="LWPOLYLINE">
-      <rect class="st26" x="1405.8" y="1324.91" width="4.51" height="2.25" transform="translate(-326.0464 2182.6981) rotate(-69.5716)"/>
+      <rect class="st26 decorative-overlay" x="1405.8" y="1324.91" width="4.51" height="2.25" transform="translate(-326.0464 2182.6981) rotate(-69.5716)"/>
     </g>
     <g id="LWPOLYLINE2948" data-name="LWPOLYLINE">
-      <path class="st26" d="M1397.45,1350.95l2.1.81c-.54,1.4-1.08,2.81-1.62,4.21l-2.1-.81c.54-1.4,1.08-2.81,1.62-4.21Z"/>
+      <path class="st26 decorative-overlay" d="M1397.45,1350.95l2.1.81c-.54,1.4-1.08,2.81-1.62,4.21l-2.1-.81c.54-1.4,1.08-2.81,1.62-4.21Z"/>
     </g>
     <g id="LWPOLYLINE2949" data-name="LWPOLYLINE">
-      <path class="st26" d="M1377.57,1401.28l2.09.85c-.57,1.39-1.13,2.78-1.7,4.18l-2.09-.85c.57-1.39,1.14-2.78,1.7-4.18Z"/>
+      <path class="st26 decorative-overlay" d="M1377.57,1401.28l2.09.85c-.57,1.39-1.13,2.78-1.7,4.18l-2.09-.85c.57-1.39,1.14-2.78,1.7-4.18Z"/>
     </g>
     <g id="LWPOLYLINE2950" data-name="LWPOLYLINE">
-      <path class="st26" d="M1354.87,1455.34l2.07.89c.6-1.38,1.19-2.76,1.79-4.14l-2.07-.89c-.59,1.38-1.19,2.76-1.79,4.14Z"/>
+      <path class="st26 decorative-overlay" d="M1354.87,1455.34l2.07.89c.6-1.38,1.19-2.76,1.79-4.14l-2.07-.89c-.59,1.38-1.19,2.76-1.79,4.14Z"/>
     </g>
     <g id="LWPOLYLINE2951" data-name="LWPOLYLINE">
-      <path class="st26" d="M1332.86,1504.77c-.63,1.37-1.25,2.73-1.88,4.1l2.05.94c.63-1.37,1.25-2.73,1.88-4.1l-2.05-.94"/>
+      <path class="st26 decorative-overlay" d="M1332.86,1504.77c-.63,1.37-1.25,2.73-1.88,4.1l2.05.94c.63-1.37,1.25-2.73,1.88-4.1l-2.05-.94"/>
     </g>
     <g id="LWPOLYLINE2952" data-name="LWPOLYLINE">
-      <path class="st26" d="M1309.91,1558.78l-2.03-.98c.66-1.35,1.31-2.71,1.96-4.06l2.03.98c-.65,1.35-1.31,2.71-1.96,4.06Z"/>
+      <path class="st26 decorative-overlay" d="M1309.91,1558.78l-2.03-.98c.66-1.35,1.31-2.71,1.96-4.06l2.03.98c-.65,1.35-1.31,2.71-1.96,4.06Z"/>
     </g>
     <g id="LWPOLYLINE2953" data-name="LWPOLYLINE">
-      <rect class="st26" x="1283.55" y="1603.63" width="4.51" height="2.25" transform="translate(-727.122 2025.0629) rotate(-63.0908)"/>
+      <rect class="st26 decorative-overlay" x="1283.55" y="1603.63" width="4.51" height="2.25" transform="translate(-727.122 2025.0629) rotate(-63.0908)"/>
     </g>
     <g id="LWPOLYLINE2954" data-name="LWPOLYLINE">
-      <polyline class="st26" points="1259.29 1654.51 1260.31 1652.5 1261.33 1650.49 1263.34 1651.51 1262.32 1653.52 1261.3 1655.53 1259.29 1654.51"/>
+      <polyline class="st26 decorative-overlay" points="1259.29 1654.51 1260.31 1652.5 1261.33 1650.49 1263.34 1651.51 1262.32 1653.52 1261.3 1655.53 1259.29 1654.51"/>
     </g>
     <g id="LWPOLYLINE2955" data-name="LWPOLYLINE">
-      <polyline class="st26" points="1232.76 1706.79 1233.78 1704.78 1234.8 1702.77 1236.81 1703.79 1235.79 1705.8 1234.77 1707.81 1232.76 1706.79"/>
+      <polyline class="st26 decorative-overlay" points="1232.76 1706.79 1233.78 1704.78 1234.8 1702.77 1236.81 1703.79 1235.79 1705.8 1234.77 1707.81 1232.76 1706.79"/>
     </g>
     <g id="LWPOLYLINE2956" data-name="LWPOLYLINE">
-      <polyline class="st26" points="1208.27 1755.04 1209.29 1753.03 1210.31 1751.02 1212.32 1752.04 1211.3 1754.05 1210.28 1756.06 1208.27 1755.04"/>
+      <polyline class="st26 decorative-overlay" points="1208.27 1755.04 1209.29 1753.03 1210.31 1751.02 1212.32 1752.04 1211.3 1754.05 1210.28 1756.06 1208.27 1755.04"/>
     </g>
     <g id="LWPOLYLINE2957" data-name="LWPOLYLINE">
-      <polyline class="st26" points="1183.78 1803.3 1184.8 1801.29 1185.82 1799.28 1187.83 1800.3 1186.81 1802.31 1185.79 1804.32 1183.78 1803.3"/>
+      <polyline class="st26 decorative-overlay" points="1183.78 1803.3 1184.8 1801.29 1185.82 1799.28 1187.83 1800.3 1186.81 1802.31 1185.79 1804.32 1183.78 1803.3"/>
     </g>
     <g id="LWPOLYLINE2958" data-name="LWPOLYLINE">
-      <rect class="st26" x="1170.28" y="1826.81" width="4.51" height="2.25" transform="translate(-988.1443 2046.23) rotate(-63.0908)"/>
+      <rect class="st26 decorative-overlay" x="1170.28" y="1826.81" width="4.51" height="2.25" transform="translate(-988.1443 2046.23) rotate(-63.0908)"/>
     </g>
     <g id="LWPOLYLINE2959" data-name="LWPOLYLINE">
-      <polyline class="st26" points="1023.44 1536.38 1025.44 1537.41 1024.41 1539.42 1023.38 1541.42 1021.37 1540.39 1022.41 1538.38 1023.44 1536.38"/>
+      <polyline class="st26 decorative-overlay" points="1023.44 1536.38 1025.44 1537.41 1024.41 1539.42 1023.38 1541.42 1021.37 1540.39 1022.41 1538.38 1023.44 1536.38"/>
     </g>
     <g id="LWPOLYLINE2960" data-name="LWPOLYLINE">
-      <path class="st26" d="M961.26,1657l2,1.03c-.69,1.34-1.38,2.67-2.07,4.01l-2-1.03,2.07-4.01Z"/>
+      <path class="st26 decorative-overlay" d="M961.26,1657l2,1.03c-.69,1.34-1.38,2.67-2.07,4.01l-2-1.03,2.07-4.01Z"/>
     </g>
     <g id="LWPOLYLINE2961" data-name="LWPOLYLINE">
-      <polyline class="st26" points="946.31 1497.03 944.31 1496 943.28 1498 942.24 1500.01 944.25 1501.04 945.28 1499.04 946.31 1497.03"/>
+      <polyline class="st26 decorative-overlay" points="946.31 1497.03 944.31 1496 943.28 1498 942.24 1500.01 944.25 1501.04 945.28 1499.04 946.31 1497.03"/>
     </g>
     <g id="LWPOLYLINE2962" data-name="LWPOLYLINE">
-      <polyline class="st26" points="668.91 1267.15 669.19 1264.91 671.43 1265.19 673.67 1265.47 673.39 1267.71 671.15 1267.43 668.91 1267.15"/>
+      <polyline class="st26 decorative-overlay" points="668.91 1267.15 669.19 1264.91 671.43 1265.19 673.67 1265.47 673.39 1267.71 671.15 1267.43 668.91 1267.15"/>
     </g>
     <g id="LWPOLYLINE2963" data-name="LWPOLYLINE">
-      <polyline class="st26" points="778.77 1592.72 779.8 1590.72 781.81 1591.75 783.81 1592.79 782.78 1594.79 778.77 1592.72"/>
+      <polyline class="st26 decorative-overlay" points="778.77 1592.72 779.8 1590.72 781.81 1591.75 783.81 1592.79 782.78 1594.79 778.77 1592.72"/>
     </g>
     <g id="LWPOLYLINE2964" data-name="LWPOLYLINE">
-      <polyline class="st26" points="556.35 1529.14 557.39 1527.13 558.42 1525.13 560.42 1526.16 559.39 1528.17 558.36 1530.17 556.35 1529.14"/>
+      <polyline class="st26 decorative-overlay" points="556.35 1529.14 557.39 1527.13 558.42 1525.13 560.42 1526.16 559.39 1528.17 558.36 1530.17 556.35 1529.14"/>
     </g>
     <g id="LWPOLYLINE2965" data-name="LWPOLYLINE">
-      <polyline class="st26" points="1129.21 1910.8 1131.22 1911.82 1130.2 1913.83 1129.18 1915.84 1127.17 1914.82 1128.19 1912.81 1129.21 1910.8"/>
+      <polyline class="st26 decorative-overlay" points="1129.21 1910.8 1131.22 1911.82 1130.2 1913.83 1129.18 1915.84 1127.17 1914.82 1128.19 1912.81 1129.21 1910.8"/>
     </g>
     <g id="LWPOLYLINE2966" data-name="LWPOLYLINE">
-      <rect class="st26" x="838.92" y="1826.89" width="2.25" height="4.51" transform="translate(-1170.6366 1736.344) rotate(-62.6902)"/>
+      <rect class="st26 decorative-overlay" x="838.92" y="1826.89" width="2.25" height="4.51" transform="translate(-1170.6366 1736.344) rotate(-62.6902)"/>
     </g>
     <g id="LWPOLYLINE2967" data-name="LWPOLYLINE">
-      <path class="st26" d="M1528.54,896.94l-2.21-.42c-.28,1.48-.56,2.95-.84,4.43l2.21.42c.28-1.48.56-2.95.84-4.43Z"/>
+      <path class="st26 decorative-overlay" d="M1528.54,896.94l-2.21-.42c-.28,1.48-.56,2.95-.84,4.43l2.21.42c.28-1.48.56-2.95.84-4.43Z"/>
     </g>
     <g id="LWPOLYLINE2968" data-name="LWPOLYLINE">
-      <path class="st26" d="M1519.84,929.71l2.21.45c.3-1.47.59-2.95.89-4.42l-2.21-.45c-.3,1.47-.59,2.95-.89,4.42Z"/>
+      <path class="st26 decorative-overlay" d="M1519.84,929.71l2.21.45c.3-1.47.59-2.95.89-4.42l-2.21-.45c-.3,1.47-.59,2.95-.89,4.42Z"/>
     </g>
     <g id="LWPOLYLINE2969" data-name="LWPOLYLINE">
-      <polygon class="st26" points="1508.57 982.63 1510.77 983.12 1511.26 980.92 1511.75 978.72 1509.55 978.23 1509.06 980.43 1508.57 982.63"/>
+      <polygon class="st26 decorative-overlay" points="1508.57 982.63 1510.77 983.12 1511.26 980.92 1511.75 978.72 1509.55 978.23 1509.06 980.43 1508.57 982.63"/>
     </g>
     <g id="LWPOLYLINE2970" data-name="LWPOLYLINE">
-      <rect class="st26" x="1496.12" y="1030.08" width="4.51" height="2.25" transform="translate(140.8989 2241.8924) rotate(-76.265)"/>
+      <rect class="st26 decorative-overlay" x="1496.12" y="1030.08" width="4.51" height="2.25" transform="translate(140.8989 2241.8924) rotate(-76.265)"/>
     </g>
     <g id="LWPOLYLINE2971" data-name="LWPOLYLINE">
-      <path class="st26" d="M1483.79,1092.68c.39-1.45.78-2.9,1.17-4.36l-2.18-.58c-.39,1.45-.78,2.9-1.17,4.36l2.18.58Z"/>
+      <path class="st26 decorative-overlay" d="M1483.79,1092.68c.39-1.45.78-2.9,1.17-4.36l-2.18-.58c-.39,1.45-.78,2.9-1.17,4.36l2.18.58Z"/>
     </g>
     <g id="LWPOLYLINE2972" data-name="LWPOLYLINE">
-      <polyline class="st26" points="1467.02 1144.2 1467.65 1142.04 1468.28 1139.87 1470.44 1140.5 1469.82 1142.66 1469.19 1144.83 1467.02 1144.2"/>
+      <polyline class="st26 decorative-overlay" points="1467.02 1144.2 1467.65 1142.04 1468.28 1139.87 1470.44 1140.5 1469.82 1142.66 1469.19 1144.83 1467.02 1144.2"/>
     </g>
     <g id="LWPOLYLINE2973" data-name="LWPOLYLINE">
-      <rect class="st26" x="1458.15" y="1169.34" width="4.51" height="2.25" transform="translate(-81.6377 2231.069) rotate(-73.2309)"/>
+      <rect class="st26 decorative-overlay" x="1458.15" y="1169.34" width="4.51" height="2.25" transform="translate(-81.6377 2231.069) rotate(-73.2309)"/>
     </g>
     <g id="LWPOLYLINE2974" data-name="LWPOLYLINE">
-      <polyline class="st26" points="1377.67 965.66 1378.11 963.45 1380.32 963.9 1382.53 964.34 1382.09 966.55 1379.88 966.11 1377.67 965.66"/>
+      <polyline class="st26 decorative-overlay" points="1377.67 965.66 1378.11 963.45 1380.32 963.9 1382.53 964.34 1382.09 966.55 1379.88 966.11 1377.67 965.66"/>
     </g>
     <g id="LWPOLYLINE2975" data-name="LWPOLYLINE">
-      <path class="st26" d="M1159.89,896.33l-2.21-.47c-.32,1.47-.63,2.94-.94,4.41l2.21.47c.31-1.47.62-2.94.94-4.41"/>
+      <path class="st26 decorative-overlay" d="M1159.89,896.33l-2.21-.47c-.32,1.47-.63,2.94-.94,4.41l2.21.47c.31-1.47.62-2.94.94-4.41"/>
     </g>
     <g id="LWPOLYLINE2976" data-name="LWPOLYLINE">
-      <polyline class="st26" points="1322.44 1172.62 1322.32 1174.88 1324.57 1174.99 1326.82 1175.11 1326.94 1172.86 1324.69 1172.74 1322.44 1172.62"/>
+      <polyline class="st26 decorative-overlay" points="1322.44 1172.62 1322.32 1174.88 1324.57 1174.99 1326.82 1175.11 1326.94 1172.86 1324.69 1172.74 1322.44 1172.62"/>
     </g>
     <g id="LWPOLYLINE2977" data-name="LWPOLYLINE">
-      <path class="st26" d="M1004.22,951.76l2.23.31c.2-1.49.41-2.98.62-4.47l-2.23-.31c-.21,1.49-.42,2.98-.62,4.47Z"/>
+      <path class="st26 decorative-overlay" d="M1004.22,951.76l2.23.31c.2-1.49.41-2.98.62-4.47l-2.23-.31c-.21,1.49-.42,2.98-.62,4.47Z"/>
     </g>
     <g id="LWPOLYLINE2978" data-name="LWPOLYLINE">
-      <polygon class="st26" points="795.11 759.22 795.48 757 795.85 754.77 798.08 755.14 797.71 757.37 797.34 759.59 795.11 759.22"/>
+      <polygon class="st26 decorative-overlay" points="795.11 759.22 795.48 757 795.85 754.77 798.08 755.14 797.71 757.37 797.34 759.59 795.11 759.22"/>
     </g>
     <g id="LWPOLYLINE2979" data-name="LWPOLYLINE">
-      <polyline class="st26" points="1009.19 1146.33 1008.9 1148.56 1006.67 1148.28 1004.43 1148 1004.71 1145.76 1006.95 1146.04 1009.19 1146.33"/>
+      <polyline class="st26 decorative-overlay" points="1009.19 1146.33 1008.9 1148.56 1006.67 1148.28 1004.43 1148 1004.71 1145.76 1006.95 1146.04 1009.19 1146.33"/>
     </g>
     <g id="LWPOLYLINE2980" data-name="LWPOLYLINE">
-      <polyline class="st26" points="747.9 931.08 750.13 931.45 749.76 933.67 749.39 935.9 747.17 935.53 747.53 933.3 747.9 931.08"/>
+      <polyline class="st26 decorative-overlay" points="747.9 931.08 750.13 931.45 749.76 933.67 749.39 935.9 747.17 935.53 747.53 933.3 747.9 931.08"/>
     </g>
     <g id="LWPOLYLINE2981" data-name="LWPOLYLINE">
-      <polyline class="st26" points="772.05 1116.5 774.29 1116.78 776.52 1117.06 776.24 1119.3 774 1119.02 771.77 1118.73 772.05 1116.5"/>
+      <polyline class="st26 decorative-overlay" points="772.05 1116.5 774.29 1116.78 776.52 1117.06 776.24 1119.3 774 1119.02 771.77 1118.73 772.05 1116.5"/>
     </g>
     <g id="LWPOLYLINE2982" data-name="LWPOLYLINE">
-      <polyline class="st26" points="909.58 959.27 909.3 961.51 909.02 963.75 906.78 963.46 907.06 961.23 907.34 958.99 909.58 959.27"/>
+      <polyline class="st26 decorative-overlay" points="909.58 959.27 909.3 961.51 909.02 963.75 906.78 963.46 907.06 961.23 907.34 958.99 909.58 959.27"/>
     </g>
     <g id="LWPOLYLINE2983" data-name="LWPOLYLINE">
-      <polyline class="st26" points="1273.72 1021.06 1273.14 1023.24 1272.57 1025.42 1270.39 1024.85 1270.96 1022.67 1271.54 1020.49 1273.72 1021.06"/>
+      <polyline class="st26 decorative-overlay" points="1273.72 1021.06 1273.14 1023.24 1272.57 1025.42 1270.39 1024.85 1270.96 1022.67 1271.54 1020.49 1273.72 1021.06"/>
     </g>
     <g id="LWPOLYLINE2984" data-name="LWPOLYLINE">
-      <polyline class="st26" points="1093.05 1156.56 1092.77 1158.8 1090.53 1158.52 1088.29 1158.24 1088.58 1156 1090.81 1156.28 1093.05 1156.56"/>
+      <polyline class="st26 decorative-overlay" points="1093.05 1156.56 1092.77 1158.8 1090.53 1158.52 1088.29 1158.24 1088.58 1156 1090.81 1156.28 1093.05 1156.56"/>
     </g>
     <g id="LWPOLYLINE2985" data-name="LWPOLYLINE">
-      <polygon class="st26" points="1089.25 1989.54 1091.25 1990.58 1089.21 1994.6 1087.21 1993.57 1089.25 1989.54"/>
+      <polygon class="st26 decorative-overlay" points="1089.25 1989.54 1091.25 1990.58 1089.21 1994.6 1087.21 1993.57 1089.25 1989.54"/>
     </g>
     <g id="LWPOLYLINE2986" data-name="LWPOLYLINE">
-      <polyline class="st26" points="1064.28 2038.75 1066.29 2039.77 1065.27 2041.78 1064.25 2043.79 1062.24 2042.77 1063.26 2040.76 1064.28 2038.75"/>
+      <polyline class="st26 decorative-overlay" points="1064.28 2038.75 1066.29 2039.77 1065.27 2041.78 1064.25 2043.79 1062.24 2042.77 1063.26 2040.76 1064.28 2038.75"/>
     </g>
     <g id="LWPOLYLINE2987" data-name="LWPOLYLINE">
-      <polyline class="st26" points="1039.79 2087 1041.8 2088.02 1040.78 2090.03 1039.76 2092.04 1037.75 2091.02 1038.77 2089.01 1039.79 2087"/>
+      <polyline class="st26 decorative-overlay" points="1039.79 2087 1041.8 2088.02 1040.78 2090.03 1039.76 2092.04 1037.75 2091.02 1038.77 2089.01 1039.79 2087"/>
     </g>
     <g id="LWPOLYLINE2988" data-name="LWPOLYLINE">
-      <polyline class="st26" points="1015.3 2135.26 1017.31 2136.28 1016.29 2138.29 1015.27 2140.3 1013.25 2139.28 1014.28 2137.27 1015.3 2135.26"/>
+      <polyline class="st26 decorative-overlay" points="1015.3 2135.26 1017.31 2136.28 1016.29 2138.29 1015.27 2140.3 1013.25 2139.28 1014.28 2137.27 1015.3 2135.26"/>
     </g>
     <g id="LWPOLYLINE2989" data-name="LWPOLYLINE">
-      <polyline class="st26" points="990.8 2183.51 992.82 2184.53 991.79 2186.54 990.77 2188.55 988.76 2187.53 989.78 2185.52 990.8 2183.51"/>
+      <polyline class="st26 decorative-overlay" points="990.8 2183.51 992.82 2184.53 991.79 2186.54 990.77 2188.55 988.76 2187.53 989.78 2185.52 990.8 2183.51"/>
     </g>
     <g id="LWPOLYLINE2990" data-name="LWPOLYLINE">
-      <polyline class="st26" points="964.27 2235.79 966.28 2236.81 965.26 2238.82 964.24 2240.83 962.23 2239.81 963.25 2237.8 964.27 2235.79"/>
+      <polyline class="st26 decorative-overlay" points="964.27 2235.79 966.28 2236.81 965.26 2238.82 964.24 2240.83 962.23 2239.81 963.25 2237.8 964.27 2235.79"/>
     </g>
     <g id="LWPOLYLINE2991" data-name="LWPOLYLINE">
-      <polyline class="st26" points="939.78 2284.04 941.79 2285.06 940.77 2287.07 939.75 2289.09 937.74 2288.07 938.76 2286.05 939.78 2284.04"/>
+      <polyline class="st26 decorative-overlay" points="939.78 2284.04 941.79 2285.06 940.77 2287.07 939.75 2289.09 937.74 2288.07 938.76 2286.05 939.78 2284.04"/>
     </g>
     <g id="LWPOLYLINE2992" data-name="LWPOLYLINE">
-      <polyline class="st26" points="915.29 2332.3 917.3 2333.32 916.28 2335.33 915.26 2337.34 913.25 2336.32 914.27 2334.31 915.29 2332.3"/>
+      <polyline class="st26 decorative-overlay" points="915.29 2332.3 917.3 2333.32 916.28 2335.33 915.26 2337.34 913.25 2336.32 914.27 2334.31 915.29 2332.3"/>
     </g>
     <g id="LWPOLYLINE2993" data-name="LWPOLYLINE">
-      <polyline class="st26" points="890.8 2380.55 892.81 2381.57 891.79 2383.59 890.77 2385.6 888.76 2384.58 889.78 2382.56 890.8 2380.55"/>
+      <polyline class="st26 decorative-overlay" points="890.8 2380.55 892.81 2381.57 891.79 2383.59 890.77 2385.6 888.76 2384.58 889.78 2382.56 890.8 2380.55"/>
     </g>
     <g id="LWPOLYLINE2994" data-name="LWPOLYLINE">
-      <polyline class="st26" points="877.53 2406.69 879.54 2407.71 878.52 2409.72 877.5 2411.73 875.49 2410.71 876.51 2408.7 877.53 2406.69"/>
+      <polyline class="st26 decorative-overlay" points="877.53 2406.69 879.54 2407.71 878.52 2409.72 877.5 2411.73 875.49 2410.71 876.51 2408.7 877.53 2406.69"/>
     </g>
     <g id="LWPOLYLINE2995" data-name="LWPOLYLINE">
-      <polygon class="st26" points="975.75 2025.85 976.77 2023.84 974.77 2022.8 973.75 2024.81 972.73 2026.82 974.73 2027.86 975.75 2025.85"/>
+      <polygon class="st26 decorative-overlay" points="975.75 2025.85 976.77 2023.84 974.77 2022.8 973.75 2024.81 972.73 2026.82 974.73 2027.86 975.75 2025.85"/>
     </g>
     <g id="LWPOLYLINE2996" data-name="LWPOLYLINE">
-      <polygon class="st26" points="733.8 2062.8 731.79 2061.76 729.73 2065.77 731.73 2066.8 732.77 2064.8 733.8 2062.8"/>
+      <polygon class="st26 decorative-overlay" points="733.8 2062.8 731.79 2061.76 729.73 2065.77 731.73 2066.8 732.77 2064.8 733.8 2062.8"/>
     </g>
     <g id="LWPOLYLINE2997" data-name="LWPOLYLINE">
-      <polyline class="st26" points="782.7 1907.89 783.74 1905.89 785.74 1906.93 787.74 1907.96 786.71 1909.96 784.71 1908.93 782.7 1907.89"/>
+      <polyline class="st26 decorative-overlay" points="782.7 1907.89 783.74 1905.89 785.74 1906.93 787.74 1907.96 786.71 1909.96 784.71 1908.93 782.7 1907.89"/>
     </g>
     <g id="LWPOLYLINE2998" data-name="LWPOLYLINE">
-      <polyline class="st26" points="629.08 2260.47 631.09 2261.51 633.09 2262.54 632.06 2264.55 630.05 2263.51 628.05 2262.48 629.08 2260.47"/>
+      <polyline class="st26 decorative-overlay" points="629.08 2260.47 631.09 2261.51 633.09 2262.54 632.06 2264.55 630.05 2263.51 628.05 2262.48 629.08 2260.47"/>
     </g>
     <g id="LWPOLYLINE2999" data-name="LWPOLYLINE">
-      <polygon class="st26" points="646.83 1936.24 648.84 1937.28 647.8 1939.28 646.77 1941.29 644.77 1940.25 646.83 1936.24"/>
+      <polygon class="st26 decorative-overlay" points="646.83 1936.24 648.84 1937.28 647.8 1939.28 646.77 1941.29 644.77 1940.25 646.83 1936.24"/>
     </g>
     <g id="LWPOLYLINE3000" data-name="LWPOLYLINE">
-      <polygon class="st26" points="510.46 2200.79 512.46 2201.82 511.43 2203.83 510.39 2205.83 508.39 2204.8 509.42 2202.79 510.46 2200.79"/>
+      <polygon class="st26 decorative-overlay" points="510.46 2200.79 512.46 2201.82 511.43 2203.83 510.39 2205.83 508.39 2204.8 509.42 2202.79 510.46 2200.79"/>
     </g>
     <g id="LWPOLYLINE3001" data-name="LWPOLYLINE">
-      <polyline class="st26" points="471.63 1693.47 473.64 1694.51 472.6 1696.51 471.57 1698.52 469.57 1697.48 470.6 1695.48 471.63 1693.47"/>
+      <polyline class="st26 decorative-overlay" points="471.63 1693.47 473.64 1694.51 472.6 1696.51 471.57 1698.52 469.57 1697.48 470.6 1695.48 471.63 1693.47"/>
     </g>
     <g id="LWPOLYLINE3002" data-name="LWPOLYLINE">
-      <rect class="st26" x="563.56" y="1900.85" width="4.51" height="2.25" transform="translate(-1384.0031 1533.389) rotate(-62.7281)"/>
+      <rect class="st26 decorative-overlay" x="563.56" y="1900.85" width="4.51" height="2.25" transform="translate(-1384.0031 1533.389) rotate(-62.7281)"/>
     </g>
     <g id="LWPOLYLINE3003" data-name="LWPOLYLINE">
-      <polygon class="st26" points="289.54 2085.15 288.51 2087.15 286.51 2086.12 284.5 2085.08 285.54 2083.08 287.54 2084.12 289.54 2085.15"/>
+      <polygon class="st26 decorative-overlay" points="289.54 2085.15 288.51 2087.15 286.51 2086.12 284.5 2085.08 285.54 2083.08 287.54 2084.12 289.54 2085.15"/>
     </g>
     <g id="LWPOLYLINE3004" data-name="LWPOLYLINE">
-      <polygon class="st26" points="342.32 1908.89 340.32 1907.85 339.28 1909.86 338.25 1911.86 340.25 1912.89 341.29 1910.89 342.32 1908.89"/>
+      <polygon class="st26 decorative-overlay" points="342.32 1908.89 340.32 1907.85 339.28 1909.86 338.25 1911.86 340.25 1912.89 341.29 1910.89 342.32 1908.89"/>
     </g>
     <g id="LWPOLYLINE3005" data-name="LWPOLYLINE">
-      <rect class="st26" x="906.28" y="1312.39" width="2.25" height="4.51" transform="translate(-510.2055 2050.8858) rotate(-82.8307)"/>
+      <rect class="st26 decorative-overlay" x="906.28" y="1312.39" width="2.25" height="4.51" transform="translate(-510.2055 2050.8858) rotate(-82.8307)"/>
     </g>
     <g id="LWPOLYLINE3006" data-name="LWPOLYLINE">
-      <rect class="st26" x="1061.83" y="1329.01" width="2.25" height="4.51" transform="translate(-379.8231 2237.1061) rotate(-83.5165)"/>
+      <rect class="st26 decorative-overlay" x="1061.83" y="1329.01" width="2.25" height="4.51" transform="translate(-379.8231 2237.1061) rotate(-83.5165)"/>
     </g>
     <g id="LWPOLYLINE3007" data-name="LWPOLYLINE">
-      <path class="st26" d="M1411.74,511.2l2.24.38c-.06,1.5-.13,3-.2,4.51l-2.24-.38c.07-1.5.13-3,.19-4.51Z"/>
+      <path class="st26 decorative-overlay" d="M1411.74,511.2l2.24.38c-.06,1.5-.13,3-.2,4.51l-2.24-.38c.07-1.5.13-3,.19-4.51Z"/>
     </g>
     <g id="LWPOLYLINE3008" data-name="LWPOLYLINE">
-      <polyline class="st26" points="494.16 1634.05 493.13 1636.06 491.12 1635.02 489.12 1633.99 490.16 1631.99 492.16 1633.02 494.16 1634.05"/>
+      <polyline class="st26 decorative-overlay" points="494.16 1634.05 493.13 1636.06 491.12 1635.02 489.12 1633.99 490.16 1631.99 492.16 1633.02 494.16 1634.05"/>
     </g>
     <g id="LWPOLYLINE3009" data-name="LWPOLYLINE">
-      <polyline class="st26" points="502.18 1638.19 501.14 1640.19 499.14 1639.16 497.13 1638.13 498.17 1636.12 500.17 1637.16 502.18 1638.19"/>
+      <polyline class="st26 decorative-overlay" points="502.18 1638.19 501.14 1640.19 499.14 1639.16 497.13 1638.13 498.17 1636.12 500.17 1637.16 502.18 1638.19"/>
     </g>
     <g id="LWPOLYLINE3010" data-name="LWPOLYLINE">
-      <polyline class="st26" points="630.4 1704.4 629.36 1706.4 627.36 1705.37 625.35 1704.33 626.39 1702.33 628.39 1703.36 630.4 1704.4"/>
+      <polyline class="st26 decorative-overlay" points="630.4 1704.4 629.36 1706.4 627.36 1705.37 625.35 1704.33 626.39 1702.33 628.39 1703.36 630.4 1704.4"/>
     </g>
     <g id="LWPOLYLINE3011" data-name="LWPOLYLINE">
-      <polyline class="st26" points="834.55 1825.04 833.52 1827.04 831.51 1826.01 829.51 1824.98 830.55 1822.97 832.55 1824.01 834.55 1825.04"/>
+      <polyline class="st26 decorative-overlay" points="834.55 1825.04 833.52 1827.04 831.51 1826.01 829.51 1824.98 830.55 1822.97 832.55 1824.01 834.55 1825.04"/>
     </g>
     <g id="LWPOLYLINE3012" data-name="LWPOLYLINE">
-      <polyline class="st26" points="974.31 1897.21 973.27 1899.21 971.27 1898.17 969.27 1897.14 970.3 1895.14 972.3 1896.17 974.31 1897.21"/>
+      <polyline class="st26 decorative-overlay" points="974.31 1897.21 973.27 1899.21 971.27 1898.17 969.27 1897.14 970.3 1895.14 972.3 1896.17 974.31 1897.21"/>
     </g>
     <g id="LWPOLYLINE3013" data-name="LWPOLYLINE">
-      <polyline class="st26" points="982.32 1901.34 981.29 1903.35 979.28 1902.31 977.28 1901.28 978.32 1899.27 980.32 1900.31 982.32 1901.34"/>
+      <polyline class="st26 decorative-overlay" points="982.32 1901.34 981.29 1903.35 979.28 1902.31 977.28 1901.28 978.32 1899.27 980.32 1900.31 982.32 1901.34"/>
     </g>
     <g id="LWPOLYLINE3014" data-name="LWPOLYLINE">
-      <rect class="st26" x="887.27" y="1603.61" width="4.51" height="2.25" transform="translate(-944.4656 1658.8445) rotate(-62.6899)"/>
+      <rect class="st26 decorative-overlay" x="887.27" y="1603.61" width="4.51" height="2.25" transform="translate(-944.4656 1658.8445) rotate(-62.6899)"/>
     </g>
   </g>
   <g id="NO">
@@ -20277,21 +20343,103 @@ function updateFilterCounts(){
   document.getElementById('progPct').textContent=pct+'%';
 }
 
-function searchOnMap(){
-  const val=document.getElementById('mapSearch').value.trim();
-  const el=document.getElementById('searchResult');
+function searchByParcel(){
+  const val=document.getElementById('parcelSearch').value.trim();
+  const el=document.getElementById('parcelSearchResult');
   if(!val){el.style.display='none';return;}
-  const info=LOTS[val];
-  if(!info){el.innerHTML='<span style="color:#f87171">⚠️ القطعة غير موجودة</span>';el.style.display='block';return;}
-  const st=statusOverrides[val]||info.s;
-  el.innerHTML=`<div style="font-weight:800;color:var(--teal);font-size:13px">قطعة ${val}</div>
-    <div style="color:var(--muted);margin-top:3px">بلوك ${info.b} · ${info.t} · ${info.a.toLocaleString('en')} م²</div>
-    <div style="margin-top:5px">${statusBadge(st)}</div>`;
-  el.style.display='block';
-  if(svgEl){
-    const poly=svgEl.querySelector('[data-lot="'+val+'"]');
-    if(poly){poly.style.fill='#fff';setTimeout(()=>{poly.style.fill='';applyStatusColors();},900);}
+  // Try exact lot match first
+  if(LOTS[val]){
+    const info=LOTS[val];
+    const st=statusOverrides[val]||info.s;
+    el.innerHTML=`<div style="font-weight:800;color:var(--teal);font-size:13px">قطعة ${val}</div>
+      <div style="color:var(--muted);margin-top:3px">بلوك ${info.b} · ${info.t} · ${info.a.toLocaleString('en')} م²</div>
+      <div style="margin-top:5px">${statusBadge(st)}</div>
+      <div style="margin-top:6px;font-size:10px;color:var(--muted);cursor:pointer" onclick="focusLotOnMap('${val}')">▸ إظهار على الخريطة</div>`;
+    el.style.display='block';
+    focusLotOnMap(val);
+    return;
   }
+  // Try block search - find all parcels in this block
+  const blockNum = parseInt(val);
+  if(!isNaN(blockNum)){
+    const inBlock = Object.entries(LOTS).filter(([_,info])=>info.b===blockNum);
+    if(inBlock.length){
+      const sold = inBlock.filter(([l,i])=>(statusOverrides[l]||i.s)==='مباعة').length;
+      const resv = inBlock.filter(([l,i])=>(statusOverrides[l]||i.s)==='محجوز').length;
+      el.innerHTML=`<div style="font-weight:800;color:var(--purple);font-size:13px">بلوك ${blockNum}</div>
+        <div style="color:var(--muted);margin-top:3px">${inBlock.length} قطعة · مباع: ${sold} · محجوز: ${resv}</div>
+        <div style="margin-top:6px;font-size:10px;color:var(--muted);cursor:pointer" onclick="highlightBlock(${blockNum})">▸ تمييز البلوك على الخريطة</div>`;
+      el.style.display='block';
+      highlightBlock(blockNum);
+      return;
+    }
+  }
+  el.innerHTML='<span style="color:#f87171">⚠️ لا توجد نتائج</span>';
+  el.style.display='block';
+}
+
+function searchByCustomer(){
+  const q=document.getElementById('customerSearch').value.trim().toLowerCase();
+  const el=document.getElementById('customerSearchResult');
+  if(!q){el.style.display='none';return;}
+  // Search through transactions (which include buyer name, phone)
+  const matches = transactions.filter(t=>{
+    const buyer = (t.buyer||'').toLowerCase();
+    const phone = (t.phone||'').toLowerCase();
+    const id = (t.id||t.nationalId||'').toLowerCase();
+    return buyer.includes(q) || phone.includes(q) || id.includes(q);
+  });
+  if(!matches.length){
+    el.innerHTML='<span style="color:#f87171">⚠️ لا يوجد عميل بهذه التفاصيل</span>';
+    el.style.display='block';
+    return;
+  }
+  // Show top 5 results
+  const top = matches.slice(0,8);
+  el.innerHTML = `<div style="font-weight:800;color:var(--teal);font-size:12px;margin-bottom:6px">${matches.length} نتيجة</div>` +
+    top.map(t=>`<div style="padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05);cursor:pointer" onclick="focusLotOnMap('${t.lot}')">
+      <div style="font-weight:700;color:#fff;font-size:11px">${t.buyer||'—'}</div>
+      <div style="font-size:10px;color:var(--muted)">قطعة ${t.lot} · بلوك ${t.block} · ${t.type}</div>
+      ${t.phone?`<div style="font-size:10px;color:var(--muted)">📱 ${t.phone}</div>`:''}
+      <div style="margin-top:2px">${statusBadge(t.status)}</div>
+    </div>`).join('');
+  el.style.display='block';
+}
+
+function focusLotOnMap(lot){
+  if(!svgEl) return;
+  const poly=svgEl.querySelector('[data-lot="'+lot+'"]');
+  if(!poly) return;
+  // Flash white briefly
+  const origStroke = poly.style.stroke;
+  const origWidth = poly.style.strokeWidth;
+  poly.style.stroke='#ffffff';
+  poly.style.strokeWidth='3px';
+  setTimeout(()=>{poly.style.stroke=origStroke;poly.style.strokeWidth=origWidth;},1500);
+}
+
+function highlightBlock(blockNum){
+  if(!svgEl) return;
+  // Dim all, highlight only this block
+  svgEl.querySelectorAll('[data-lot]').forEach(el=>{
+    const lot = el.getAttribute('data-lot');
+    const info = LOTS[lot];
+    if(info && info.b===blockNum){
+      el.classList.remove('lot-dimmed');
+      el.style.stroke='#ffffff';
+      el.style.strokeWidth='1.5px';
+    } else {
+      el.classList.add('lot-dimmed');
+    }
+  });
+  // Auto-clear after 6 seconds
+  setTimeout(()=>{
+    svgEl.querySelectorAll('[data-lot]').forEach(el=>{
+      el.classList.remove('lot-dimmed');
+      el.style.stroke='';
+      el.style.strokeWidth='';
+    });
+  },6000);
 }
 
 function showLotPopup(lot,e){
@@ -20438,7 +20586,7 @@ function updateDashboard(){
     if(st==='مباعة'){types[k].sold++;types[k].val+=info.v;}
     if(st==='محجوز') types[k].resv++;
   });
-  const typeColors={سكني:'var(--teal)','تجاري':'var(--purple)','خدمات قابله للبيع':'#f59e0b'};
+  const typeColors={سكني:'#9aa3c0','تجاري':'#f5b042','خدمات':'#8ed98a','خدمات قابله للبيع':'#8ed98a'};
   document.getElementById('typeBreakdown').innerHTML=Object.entries(types).map(([t,d])=>`
     <div class="type-card">
       <div class="type-card-name" style="color:${typeColors[t]||'#fff'}">${t}</div>
@@ -20757,6 +20905,212 @@ function highlightLotOnMap(lot){
   showPage('map', document.querySelector('.nav-tab'));
   setTimeout(()=>showLotPopup(lot, {clientX: window.innerWidth/2, clientY: window.innerHeight/2}), 400);
 }
+
+// ════════════════════════════════════════════════
+//  EXCEL EXPORT
+// ════════════════════════════════════════════════
+function updateExportRange(){
+  const v=document.getElementById('exportPeriod').value;
+  document.getElementById('exportMonthBox').style.display = v==='month' ? 'block' : 'none';
+  document.getElementById('exportYearBox').style.display = v==='year' ? 'block' : 'none';
+  document.getElementById('exportFromBox').style.display = v==='custom' ? 'block' : 'none';
+  document.getElementById('exportToBox').style.display = v==='custom' ? 'block' : 'none';
+  // Set sensible defaults
+  if(v==='month' && !document.getElementById('exportMonth').value){
+    document.getElementById('exportMonth').value = new Date().toISOString().slice(0,7);
+  }
+  if(v==='year' && !document.getElementById('exportYear').value){
+    document.getElementById('exportYear').value = new Date().getFullYear();
+  }
+  updateExportPreview();
+}
+
+function parseTxDate(d){
+  if(!d) return null;
+  // Try multiple formats: 'YYYY-MM-DD', 'D/M/YYYY', 'M/D/YYYY'
+  if(/^\d{4}-\d{2}-\d{2}/.test(d)){
+    return new Date(d);
+  }
+  const m = d.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if(m){
+    // Assume D/M/YYYY (Arabic locale common)
+    return new Date(+m[3], +m[2]-1, +m[1]);
+  }
+  const dt = new Date(d);
+  return isNaN(dt) ? null : dt;
+}
+
+function getFilteredTransactions(){
+  const period=document.getElementById('exportPeriod').value;
+  const status=document.getElementById('exportStatus').value;
+  let from=null, to=null;
+  if(period==='month'){
+    const m=document.getElementById('exportMonth').value;
+    if(m){
+      const [y,mo]=m.split('-').map(Number);
+      from=new Date(y,mo-1,1);
+      to=new Date(y,mo,1);
+    }
+  } else if(period==='year'){
+    const y=parseInt(document.getElementById('exportYear').value);
+    if(y){from=new Date(y,0,1);to=new Date(y+1,0,1);}
+  } else if(period==='custom'){
+    const f=document.getElementById('exportFrom').value;
+    const t=document.getElementById('exportTo').value;
+    if(f) from=new Date(f);
+    if(t){to=new Date(t); to.setDate(to.getDate()+1);}
+  }
+  return transactions.filter(tx=>{
+    if(status!=='all' && tx.status!==status) return false;
+    if(from || to){
+      const d=parseTxDate(tx.date);
+      if(!d) return false;
+      if(from && d<from) return false;
+      if(to && d>=to) return false;
+    }
+    return true;
+  });
+}
+
+function updateExportPreview(){
+  const matches=getFilteredTransactions();
+  const total=matches.reduce((s,t)=>s+(t.value||0),0);
+  document.getElementById('exportPreview').innerHTML = 
+    `سيتم تصدير <b style="color:var(--teal)">${matches.length}</b> صفقة بإجمالي <b style="color:#f5b042">${total.toLocaleString('en')}</b> ريال`;
+}
+
+['exportMonth','exportYear','exportFrom','exportTo','exportStatus'].forEach(id=>{
+  const el = document.getElementById(id);
+  if(el) el.addEventListener('change', updateExportPreview);
+});
+
+function exportExcelReport(){
+  const matches=getFilteredTransactions();
+  if(!matches.length){
+    alert('⚠️ لا توجد صفقات تطابق الفلتر المحدد');
+    return;
+  }
+  // Sort by date
+  matches.sort((a,b)=>{
+    const da=parseTxDate(a.date), db=parseTxDate(b.date);
+    if(!da && !db) return 0;
+    if(!da) return 1;
+    if(!db) return -1;
+    return da-db;
+  });
+
+  // Sheet 1: Detailed transactions
+  const detail = matches.map((t,i)=>({
+    '#': i+1,
+    'رقم القطعة': t.lot,
+    'رقم البلوك': t.block,
+    'النوع': t.type,
+    'الحالة': t.status,
+    'اسم المشتري': t.buyer || '—',
+    'رقم الجوال': t.phone || '',
+    'البائع': t.seller || '',
+    'سعر المتر (ريال)': t.salePrice ? Math.round(t.salePrice) : '',
+    'قيمة الصفقة (ريال)': t.value ? Math.round(t.value) : '',
+    'تاريخ العقد': t.date || '',
+    'ملاحظات': t.notes || ''
+  }));
+
+  // Sheet 2: Summary
+  const byMonth = {};
+  matches.forEach(t=>{
+    const d=parseTxDate(t.date);
+    const key = d ? `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}` : 'غير محدد';
+    if(!byMonth[key]) byMonth[key]={count:0,sold:0,reserved:0,value:0,area:0};
+    byMonth[key].count++;
+    if(t.status==='مباعة') byMonth[key].sold++;
+    if(t.status==='محجوز') byMonth[key].reserved++;
+    byMonth[key].value += t.value||0;
+    const info = LOTS[String(t.lot)];
+    if(info) byMonth[key].area += info.a;
+  });
+  const summary = Object.entries(byMonth).sort().map(([k,v])=>({
+    'الشهر': k,
+    'عدد الصفقات': v.count,
+    'مباعة': v.sold,
+    'محجوزة': v.reserved,
+    'إجمالي المساحة (م²)': Math.round(v.area),
+    'إجمالي القيمة (ريال)': Math.round(v.value)
+  }));
+
+  // Sheet 3: By type
+  const byType={};
+  matches.forEach(t=>{
+    const k=t.type||'غير محدد';
+    if(!byType[k]) byType[k]={count:0,value:0};
+    byType[k].count++;
+    byType[k].value += t.value||0;
+  });
+  const typeRows = Object.entries(byType).map(([k,v])=>({
+    'النوع': k,
+    'عدد الصفقات': v.count,
+    'إجمالي القيمة (ريال)': Math.round(v.value),
+    'متوسط قيمة الصفقة (ريال)': Math.round(v.value/v.count)
+  }));
+
+  // Sheet 4: KPIs
+  const totalValue = matches.reduce((s,t)=>s+(t.value||0),0);
+  const soldCount = matches.filter(t=>t.status==='مباعة').length;
+  const resvCount = matches.filter(t=>t.status==='محجوز').length;
+  const kpis = [
+    {'المؤشر':'فترة التقرير','القيمة': describePeriod()},
+    {'المؤشر':'إجمالي عدد الصفقات','القيمة': matches.length},
+    {'المؤشر':'صفقات مباعة','القيمة': soldCount},
+    {'المؤشر':'صفقات محجوزة','القيمة': resvCount},
+    {'المؤشر':'إجمالي قيمة الصفقات (ريال)','القيمة': Math.round(totalValue).toLocaleString('en')},
+    {'المؤشر':'متوسط قيمة الصفقة (ريال)','القيمة': Math.round(totalValue/matches.length).toLocaleString('en')},
+    {'المؤشر':'تاريخ التصدير','القيمة': new Date().toLocaleDateString('ar-SA')+' '+new Date().toLocaleTimeString('ar-SA')}
+  ];
+
+  // Build workbook
+  const wb = XLSX.utils.book_new();
+  
+  const ws1 = XLSX.utils.json_to_sheet(detail);
+  // Set RTL on the sheet
+  if(!ws1['!views']) ws1['!views']=[{RTL:true}];
+  ws1['!cols'] = [
+    {wch:5},{wch:12},{wch:12},{wch:10},{wch:10},{wch:25},{wch:14},{wch:18},{wch:14},{wch:18},{wch:14},{wch:25}
+  ];
+  XLSX.utils.book_append_sheet(wb, ws1, 'الصفقات');
+  
+  const ws2 = XLSX.utils.json_to_sheet(summary);
+  ws2['!views']=[{RTL:true}];
+  ws2['!cols']=[{wch:14},{wch:14},{wch:10},{wch:10},{wch:20},{wch:22}];
+  XLSX.utils.book_append_sheet(wb, ws2, 'حسب الشهر');
+  
+  const ws3 = XLSX.utils.json_to_sheet(typeRows);
+  ws3['!views']=[{RTL:true}];
+  ws3['!cols']=[{wch:14},{wch:14},{wch:22},{wch:24}];
+  XLSX.utils.book_append_sheet(wb, ws3, 'حسب النوع');
+  
+  const ws4 = XLSX.utils.json_to_sheet(kpis);
+  ws4['!views']=[{RTL:true}];
+  ws4['!cols']=[{wch:30},{wch:30}];
+  XLSX.utils.book_append_sheet(wb, ws4, 'ملخص KPI');
+
+  // Filename based on period
+  const fname = `تقرير_مبيعات_${describePeriod().replace(/[\/\s]/g,'_')}_${new Date().toISOString().slice(0,10)}.xlsx`;
+  XLSX.writeFile(wb, fname);
+}
+
+function describePeriod(){
+  const p=document.getElementById('exportPeriod').value;
+  if(p==='month') return document.getElementById('exportMonth').value || 'شهر';
+  if(p==='year') return document.getElementById('exportYear').value || 'سنة';
+  if(p==='custom'){
+    const f=document.getElementById('exportFrom').value;
+    const t=document.getElementById('exportTo').value;
+    return `${f||'?'}_الى_${t||'?'}`;
+  }
+  return 'كل_الفترات';
+}
+
+// Initialize preview
+setTimeout(updateExportPreview, 500);
 
 </script>
 </body>
