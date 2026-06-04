@@ -721,7 +721,7 @@ body::before{
         <div class="search-result" id="parcelSearchResult"></div>
       </div>
 
-      <div class="sidebar-section">
+      <div class="sidebar-section" id="sidebarCustomerSearch">
         <div class="sidebar-section-title">👤 بحث بالعميل</div>
         <input class="search-input" id="customerSearch" placeholder="اسم، جوال، رقم هوية..." oninput="searchByCustomer()">
         <div class="search-result" id="customerSearchResult"></div>
@@ -20195,7 +20195,10 @@ function closeLoginModal(){
 function applyRoleUI(){
   const role = currentUser ? currentUser.role : 'guest';
   const isGuest = role==='guest';
+  const isViewer = role==='viewer';
   const canEdit = role==='admin' || role==='sales';
+  const canSeeCustomers = role==='admin' || role==='sales'; // guests and viewers cannot
+
   // Tabs
   document.getElementById('tabDash').style.display    = isGuest ? 'none' : 'inline-block';
   document.getElementById('tabReports').style.display = isGuest ? 'none' : 'inline-block';
@@ -20204,6 +20207,14 @@ function applyRoleUI(){
   document.getElementById('userBadge').style.display  = isGuest ? 'none' : 'flex';
   document.getElementById('logoutBtn').style.display  = isGuest ? 'none' : 'inline-block';
   document.getElementById('loginTopBtn').style.display= isGuest ? 'inline-block' : 'none';
+  // Customer search — hidden from guests and viewers
+  const custDisplay = canSeeCustomers ? 'block' : 'none';
+  document.getElementById('sidebarCustomerSearch').style.display = custDisplay;
+  document.getElementById('dashTabCustomer').style.display = canSeeCustomers ? 'inline-block' : 'none';
+  // If viewer/guest had customer tab active, switch to parcel tab
+  if(!canSeeCustomers && typeof switchDashSearch === 'function'){
+    switchDashSearch('parcel');
+  }
   // Always land on map
   showPage('map', document.querySelector('.nav-tab'));
 }
@@ -20274,9 +20285,10 @@ function loadMapSVG(){
       const info=LOTS[lot];
       if(!info) return;
       const st=statusOverrides[lot]||info.s;
-      // Buyer line if sold/reserved
+      // Buyer line if sold/reserved and user has permission
       let buyerLine='';
-      if(st==='مباعة' || st==='محجوز'){
+      const canSeeCust = currentUser && (currentUser.role==='admin' || currentUser.role==='sales');
+      if((st==='مباعة' || st==='محجوز') && canSeeCust){
         const tx = transactions.find(t=>String(t.lot)===String(lot));
         if(tx && tx.buyer){
           buyerLine = `<div class="tt-row" style="margin-top:4px;padding-top:4px;border-top:1px solid rgba(255,255,255,.08)"><span>العميل</span><b style="color:#f5b042">${tx.buyer}</b></div>`;
@@ -20408,35 +20420,53 @@ function searchByParcel(){
   const val=document.getElementById('parcelSearch').value.trim();
   const el=document.getElementById('parcelSearchResult');
   if(!val){el.style.display='none';return;}
-  // Try exact lot match first
-  if(LOTS[val]){
-    const info=LOTS[val];
-    const st=statusOverrides[val]||info.s;
-    el.innerHTML=`<div style="font-weight:800;color:var(--teal);font-size:13px">قطعة ${val}</div>
-      <div style="color:var(--muted);margin-top:3px">بلوك ${info.b} · ${info.t} · ${info.a.toLocaleString('en')} م²</div>
-      <div style="margin-top:5px">${statusBadge(st)}</div>
-      <div style="margin-top:6px;font-size:10px;color:var(--muted);cursor:pointer" onclick="focusLotOnMap('${val}')">▸ إظهار على الخريطة</div>`;
+
+  const num = parseInt(val);
+  const lotMatch = LOTS[val];
+  const blockLots = !isNaN(num) ? Object.entries(LOTS).filter(([_,info])=>info.b===num) : [];
+  const hasLot = !!lotMatch;
+  const hasBlock = blockLots.length > 0;
+
+  if(!hasLot && !hasBlock){
+    el.innerHTML='<span style="color:#f87171">⚠️ لا توجد نتائج</span>';
     el.style.display='block';
-    focusLotOnMap(val);
     return;
   }
-  // Try block search - find all parcels in this block
-  const blockNum = parseInt(val);
-  if(!isNaN(blockNum)){
-    const inBlock = Object.entries(LOTS).filter(([_,info])=>info.b===blockNum);
-    if(inBlock.length){
-      const sold = inBlock.filter(([l,i])=>(statusOverrides[l]||i.s)==='مباعة').length;
-      const resv = inBlock.filter(([l,i])=>(statusOverrides[l]||i.s)==='محجوز').length;
-      el.innerHTML=`<div style="font-weight:800;color:var(--purple);font-size:13px">بلوك ${blockNum}</div>
-        <div style="color:var(--muted);margin-top:3px">${inBlock.length} قطعة · مباع: ${sold} · محجوز: ${resv}</div>
-        <div style="margin-top:6px;font-size:10px;color:var(--muted);cursor:pointer" onclick="highlightBlock(${blockNum})">▸ تمييز البلوك على الخريطة</div>`;
-      el.style.display='block';
-      highlightBlock(blockNum);
-      return;
-    }
+
+  let html='';
+
+  // Lot result
+  if(hasLot){
+    const info=lotMatch;
+    const st=statusOverrides[val]||info.s;
+    html+=`<div style="padding:8px 0;${hasBlock?'border-bottom:1px solid var(--border);margin-bottom:8px':''}">
+      <div style="font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">قطعة</div>
+      <div style="font-weight:800;color:var(--teal);font-size:13px">قطعة ${val}</div>
+      <div style="color:var(--muted);margin-top:3px;font-size:11px">بلوك ${info.b} · ${info.t} · ${info.a.toLocaleString('en')} م²</div>
+      <div style="margin-top:5px">${statusBadge(st)}</div>
+      <div style="margin-top:6px;font-size:10px;color:var(--muted);cursor:pointer" onclick="focusLotOnMap('${val}')">▸ إظهار على الخريطة</div>
+    </div>`;
   }
-  el.innerHTML='<span style="color:#f87171">⚠️ لا توجد نتائج</span>';
+
+  // Block result
+  if(hasBlock){
+    const sold  = blockLots.filter(([l,i])=>(statusOverrides[l]||i.s)==='مباعة').length;
+    const resv  = blockLots.filter(([l,i])=>(statusOverrides[l]||i.s)==='محجوز').length;
+    const avail = blockLots.length - sold - resv;
+    html+=`<div style="padding:${hasLot?'8px 0 0 0':'8px 0'}">
+      <div style="font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">بلوك</div>
+      <div style="font-weight:800;color:var(--purple);font-size:13px">بلوك ${num}</div>
+      <div style="color:var(--muted);margin-top:3px;font-size:11px">${blockLots.length} قطعة · مباع: ${sold} · محجوز: ${resv} · متاح: ${avail}</div>
+      <div style="margin-top:6px;font-size:10px;color:var(--muted);cursor:pointer" onclick="highlightBlock(${num})">▸ تمييز البلوك على الخريطة</div>
+    </div>`;
+  }
+
+  el.innerHTML=html;
   el.style.display='block';
+
+  // Auto-action: if both match highlight block but also focus lot
+  if(hasLot) focusLotOnMap(val);
+  if(hasBlock && !hasLot) highlightBlock(num);
 }
 
 function searchByCustomer(){
@@ -20515,9 +20545,10 @@ function showLotPopup(lot,e){
   document.getElementById('popPrice').textContent=info.p.toLocaleString('en')+' ريال/م²';
   document.getElementById('popStatus').innerHTML=statusBadge(st);
 
-  // Customer info section - only if sold/reserved
+  // Customer info section - only if sold/reserved AND user has permission
   const customerBox = document.getElementById('popCustomer');
-  if(st==='مباعة' || st==='محجوز'){
+  const canSeeCustomers = currentUser && (currentUser.role==='admin' || currentUser.role==='sales');
+  if((st==='مباعة' || st==='محجوز') && canSeeCustomers){
     // Find the matching transaction (most recent for this lot)
     const tx = transactions.find(t=>String(t.lot)===String(lot));
     customerBox.style.display='block';
@@ -20929,23 +20960,86 @@ function dashSearchParcel(){
   const emptyEl  = document.getElementById('dashSearchEmpty');
   if(!val){ resultEl.style.display='none'; emptyEl.style.display='none'; clearMapHighlight(); return; }
 
-  // Try as lot number first
-  if(LOTS[val]){
-    showParcelResult([val], 'قطعة #'+val);
+  const num = parseInt(val);
+  const hasLot   = !!LOTS[val];
+  const blockLots = !isNaN(num) ? Object.entries(LOTS).filter(([_,info])=>info.b===num).map(([l])=>l) : [];
+  const hasBlock  = blockLots.length > 0;
+
+  if(!hasLot && !hasBlock){
+    resultEl.style.display='none';
+    emptyEl.style.display='block';
+    emptyEl.textContent='⚠️ لا توجد نتائج';
+    clearMapHighlight();
     return;
   }
-  // Try as block number
-  const num = parseInt(val);
-  if(!isNaN(num)){
-    const blockLots = Object.entries(LOTS).filter(([_,info])=>info.b===num).map(([l])=>l);
-    if(blockLots.length){
-      showParcelResult(blockLots, 'بلوك #'+num);
-      return;
-    }
+
+  emptyEl.style.display='none';
+
+  if(hasLot && hasBlock){
+    // Both match — show two separate result sections
+    showDualParcelResult(val, num, blockLots);
+  } else if(hasLot){
+    showParcelResult([val], 'قطعة #'+val);
+  } else {
+    showParcelResult(blockLots, 'بلوك #'+num);
   }
-  resultEl.style.display='none';
-  emptyEl.style.display='block';
-  clearMapHighlight();
+}
+
+function showDualParcelResult(lotVal, blockNum, blockLots){
+  const resultEl=document.getElementById('dashSearchResult');
+  resultEl.style.display='block';
+
+  const info=LOTS[lotVal];
+  const st=statusOverrides[lotVal]||info.s;
+  const bSold  = blockLots.filter(l=>(statusOverrides[l]||LOTS[l]?.s)==='مباعة').length;
+  const bResv  = blockLots.filter(l=>(statusOverrides[l]||LOTS[l]?.s)==='محجوز').length;
+  const bAvail = blockLots.length - bSold - bResv;
+  const bVal   = blockLots.reduce((s,l)=>s+(LOTS[l]?.v||0),0);
+
+  // Summary cards — show parcel on left, block on right
+  document.getElementById('dashResultCards').innerHTML = `
+    <div style="background:rgba(83,164,169,.08);border:1px solid rgba(83,164,169,.3);border-radius:12px;padding:14px;text-align:center">
+      <div style="font-size:9px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">قطعة #${lotVal}</div>
+      <div style="font-size:22px;font-weight:900;color:var(--teal)">${info.t}</div>
+      <div style="font-size:10px;color:var(--muted);margin-top:4px">${info.a.toLocaleString('en')} م²</div>
+      <div style="margin-top:6px">${statusBadge(st)}</div>
+    </div>
+    <div style="background:rgba(162,125,184,.08);border:1px solid rgba(162,125,184,.3);border-radius:12px;padding:14px;text-align:center;grid-column:span 3">
+      <div style="font-size:9px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">بلوك #${blockNum} — إجمالي القطع: ${blockLots.length}</div>
+      <div style="display:flex;justify-content:center;gap:24px;margin-top:8px">
+        <div><div style="font-size:20px;font-weight:900;color:#d32f2f">${bSold}</div><div style="font-size:10px;color:var(--muted)">مباعة</div></div>
+        <div><div style="font-size:20px;font-weight:900;color:#2e8b57">${bResv}</div><div style="font-size:10px;color:var(--muted)">محجوزة</div></div>
+        <div><div style="font-size:20px;font-weight:900;color:#8aaaf0">${bAvail}</div><div style="font-size:10px;color:var(--muted)">متاحة</div></div>
+        <div><div style="font-size:14px;font-weight:900;color:#f5b042">${(bVal/1e6).toFixed(1)} م</div><div style="font-size:10px;color:var(--muted)">ريال</div></div>
+      </div>
+    </div>`;
+
+  document.getElementById('dashResultTitle').textContent = `قطعة ${lotVal} — بلوك ${blockNum} (${blockLots.length} قطعة)`;
+  document.getElementById('dashResultHeader').innerHTML =
+    `<div class="tx-header" style="grid-template-columns:50px 80px 80px 1fr 110px 90px">
+      <div>م</div><div>القطعة</div><div>النوع</div><div>المساحة م²</div><div>القيمة ريال</div><div>الحالة</div>
+    </div>`;
+
+  // Show all block lots, with lot # highlighted if it matches
+  document.getElementById('dashResultBody').innerHTML = blockLots
+    .sort((a,b)=>parseInt(a)-parseInt(b))
+    .map((lot,i)=>{
+      const li=LOTS[lot]; if(!li) return '';
+      const lst=statusOverrides[lot]||li.s;
+      const isTarget = lot===lotVal;
+      return `<div class="tx-row" style="grid-template-columns:50px 80px 80px 1fr 110px 90px;cursor:pointer;${isTarget?'background:rgba(83,164,169,.1);border-radius:6px;':''}" onclick="highlightLotOnMap('${lot}')">
+        <div style="color:var(--muted)">${i+1}</div>
+        <div style="font-weight:700;color:${isTarget?'#fff':'var(--teal)'}${isTarget?';background:var(--teal);border-radius:4px;padding:1px 5px;display:inline-block':''}">${lot}</div>
+        <div><span class="type-badge ${li.t==='تجاري'?'tb-c':'tb-r'}">${li.t}</span></div>
+        <div dir="ltr">${li.a.toLocaleString('en')}</div>
+        <div dir="ltr" style="color:#f59e0b;font-weight:700">${Math.round(li.v).toLocaleString('en')}</div>
+        <div>${statusBadge(lst)}</div>
+      </div>`;
+    }).join('');
+
+  // Highlight the whole block on map, flash the specific lot
+  highlightLotsOnMap(new Set(blockLots.map(String)));
+  setTimeout(()=>focusLotOnMap(lotVal), 300);
 }
 
 function showParcelResult(lots, title){
