@@ -251,10 +251,12 @@ body::before{
   position:absolute;
   background:linear-gradient(145deg,var(--card) 0%,var(--navy) 100%);
   border:1px solid var(--border-l);border-radius:14px;padding:18px;
-  width:230px;z-index:100;display:none;
+  width:260px;z-index:100;display:none;max-height:80vh;overflow-y:auto;
   box-shadow:0 12px 40px rgba(0,0,0,.5),0 0 0 1px rgba(162,125,184,.1);
   animation:popIn .2s ease;
 }
+.lot-popup::-webkit-scrollbar{width:4px}
+.lot-popup::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
 @keyframes popIn{from{opacity:0;transform:scale(.9) translateY(6px)}to{opacity:1;transform:scale(1) translateY(0)}}
 
 .popup-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border)}
@@ -343,6 +345,15 @@ body::before{
 
 /* Hide decorative red overlays (st26) that block parcel colors */
 .decorative-overlay{display:none!important}
+
+/* Dashboard search tabs */
+.dash-search-tab{
+  padding:9px 16px;background:transparent;border:none;border-bottom:2px solid transparent;
+  color:var(--muted);font-family:'Cairo',sans-serif;font-size:13px;font-weight:600;
+  cursor:pointer;transition:all .2s;margin-bottom:-1px;
+}
+.dash-search-tab:hover{color:var(--text)}
+.dash-search-tab.active{color:var(--teal);border-bottom-color:var(--teal)}
 
 /* ══ DASHBOARD ══ */
 #dashPage{flex-direction:column;overflow-y:auto;padding:24px}
@@ -747,6 +758,16 @@ body::before{
         <div class="popup-row"><span class="popup-lbl">القيمة المعتمدة</span><span class="popup-val" id="popVal"></span></div>
         <div class="popup-row"><span class="popup-lbl">سعر المتر</span><span class="popup-val" id="popPrice"></span></div>
         <div style="margin-top:10px"><span id="popStatus"></span></div>
+        <!-- Customer info section (shown only when sold/reserved) -->
+        <div id="popCustomer" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
+          <div style="font-size:10px;color:var(--muted);font-weight:700;margin-bottom:6px;letter-spacing:.5px">معلومات العميل</div>
+          <div class="popup-row"><span class="popup-lbl">👤 العميل</span><span class="popup-val" id="popBuyer">—</span></div>
+          <div class="popup-row" id="popPhoneRow"><span class="popup-lbl">📱 الجوال</span><span class="popup-val" id="popPhone">—</span></div>
+          <div class="popup-row" id="popSellerRow"><span class="popup-lbl">🧑‍💼 البائع</span><span class="popup-val" id="popSeller">—</span></div>
+          <div class="popup-row" id="popDateRow"><span class="popup-lbl">📅 التاريخ</span><span class="popup-val" id="popDate">—</span></div>
+          <div class="popup-row" id="popSalePriceRow"><span class="popup-lbl">💵 سعر البيع</span><span class="popup-val" id="popSalePrice">—</span></div>
+          <div class="popup-row" id="popNotesRow"><span class="popup-lbl">📝 ملاحظات</span><span class="popup-val" id="popNotes" style="font-size:10px;text-align:left">—</span></div>
+        </div>
         <div class="popup-actions" id="popActions"></div>
       </div>
       <!-- Hover Tooltip -->
@@ -819,35 +840,65 @@ body::before{
     </div>
 
 
-    <!-- Block Search Section -->
+    <!-- Unified Search Section -->
     <div style="background:linear-gradient(145deg,var(--card) 0%,var(--card2) 100%);border:1px solid var(--border);border-radius:16px;padding:22px;margin-bottom:20px">
-      <div class="dash-card-title t-purple" style="margin-bottom:16px">🔍 بحث بالبلوك</div>
-      <div style="display:flex;gap:12px;align-items:center;margin-bottom:16px">
-        <input type="number" id="blockSearchInput" class="form-input" 
-          placeholder="أدخل رقم البلوك (1 - 149)..."
-          oninput="searchByBlock()" 
-          style="max-width:280px;background:rgba(255,255,255,.06)">
-        <button onclick="clearBlockSearch()" 
-          style="padding:10px 18px;background:rgba(162,125,184,.15);border:1px solid rgba(162,125,184,.3);border-radius:10px;color:var(--purple);font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer">
-          مسح
+      <div class="dash-card-title t-purple" style="margin-bottom:16px">🔍 البحث الذكي</div>
+
+      <!-- Search tabs -->
+      <div style="display:flex;gap:6px;margin-bottom:14px;border-bottom:1px solid var(--border);padding-bottom:0">
+        <button id="dashTabParcel" class="dash-search-tab active" onclick="switchDashSearch('parcel')">
+          🏘️ بحث بالقطعة
+        </button>
+        <button id="dashTabCustomer" class="dash-search-tab" onclick="switchDashSearch('customer')">
+          👤 بحث بالعميل
         </button>
       </div>
-      <div id="blockSearchResult" style="display:none">
-        <!-- Result cards -->
-        <div id="blockResultCards" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px"></div>
-        <!-- Lots table -->
+
+      <!-- Parcel search panel -->
+      <div id="dashParcelPanel">
+        <div style="display:flex;gap:12px;align-items:center;margin-bottom:16px;flex-wrap:wrap">
+          <input type="number" id="dashParcelInput" class="form-input"
+            placeholder="رقم القطعة أو رقم البلوك..."
+            oninput="dashSearchParcel()"
+            style="max-width:280px;background:rgba(255,255,255,.06)">
+          <button onclick="dashClearSearch()"
+            style="padding:10px 18px;background:rgba(162,125,184,.15);border:1px solid rgba(162,125,184,.3);border-radius:10px;color:var(--purple);font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer">
+            مسح
+          </button>
+          <span style="font-size:11px;color:var(--muted)">أدخل رقم قطعة (مثال: 1316) أو رقم بلوك (مثال: 74)</span>
+        </div>
+      </div>
+
+      <!-- Customer search panel -->
+      <div id="dashCustomerPanel" style="display:none">
+        <div style="display:flex;gap:12px;align-items:center;margin-bottom:16px;flex-wrap:wrap">
+          <input type="text" id="dashCustomerInput" class="form-input"
+            placeholder="اسم العميل، رقم الجوال، الهوية..."
+            oninput="dashSearchCustomer()"
+            style="max-width:340px;background:rgba(255,255,255,.06)">
+          <button onclick="dashClearSearch()"
+            style="padding:10px 18px;background:rgba(162,125,184,.15);border:1px solid rgba(162,125,184,.3);border-radius:10px;color:var(--purple);font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer">
+            مسح
+          </button>
+          <span style="font-size:11px;color:var(--muted)">يبحث في جميع الصفقات المسجلة</span>
+        </div>
+      </div>
+
+      <!-- Result panels -->
+      <div id="dashSearchResult" style="display:none">
+        <!-- Summary cards (for parcel search) -->
+        <div id="dashResultCards" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px"></div>
+        <!-- Detail table -->
         <div style="background:rgba(255,255,255,.03);border-radius:12px;padding:14px">
-          <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">قطع البلوك</div>
-          <div style="max-height:280px;overflow-y:auto">
-            <div class="tx-header" style="grid-template-columns:50px 80px 80px 1fr 110px 90px">
-              <div>م</div><div>رقم القطعة</div><div>النوع</div><div>المساحة م²</div><div>القيمة ريال</div><div>الحالة</div>
-            </div>
-            <div id="blockLotsBody"></div>
+          <div id="dashResultTitle" style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">النتائج</div>
+          <div style="max-height:320px;overflow-y:auto">
+            <div id="dashResultHeader"></div>
+            <div id="dashResultBody"></div>
           </div>
         </div>
       </div>
-      <div id="blockSearchEmpty" style="display:none;text-align:center;padding:24px;color:var(--muted);font-size:12px">
-        ⚠️ لا توجد قطع بهذا البلوك
+      <div id="dashSearchEmpty" style="display:none;text-align:center;padding:24px;color:var(--muted);font-size:12px">
+        ⚠️ لا توجد نتائج
       </div>
     </div>
     <div class="dash-grid">
@@ -20223,6 +20274,15 @@ function loadMapSVG(){
       const info=LOTS[lot];
       if(!info) return;
       const st=statusOverrides[lot]||info.s;
+      // Buyer line if sold/reserved
+      let buyerLine='';
+      if(st==='مباعة' || st==='محجوز'){
+        const tx = transactions.find(t=>String(t.lot)===String(lot));
+        if(tx && tx.buyer){
+          buyerLine = `<div class="tt-row" style="margin-top:4px;padding-top:4px;border-top:1px solid rgba(255,255,255,.08)"><span>العميل</span><b style="color:#f5b042">${tx.buyer}</b></div>`;
+          if(tx.phone) buyerLine += `<div class="tt-row"><span>📱</span><b style="font-size:10px">${tx.phone}</b></div>`;
+        }
+      }
       tooltip.innerHTML=`
         <div class="tt-lot">قطعة ${lot}</div>
         <div class="tt-row"><span>البلوك</span><b>${info.b}</b></div>
@@ -20230,7 +20290,8 @@ function loadMapSVG(){
         <div class="tt-row"><span>المساحة</span><b>${info.a.toLocaleString('en')} م²</b></div>
         <div class="tt-row"><span>القيمة المعتمدة</span><b>${Math.round(info.v).toLocaleString('en')}</b></div>
         <div class="tt-row"><span>سعر المتر</span><b>${info.p.toLocaleString('en')}</b></div>
-        <div class="tt-status">${statusBadge(st)}</div>`;
+        <div class="tt-status">${statusBadge(st)}</div>
+        ${buyerLine}`;
       tooltip.style.display='block';
     });
     el.addEventListener('mousemove',e=>{
@@ -20453,6 +20514,47 @@ function showLotPopup(lot,e){
   document.getElementById('popVal').textContent=Math.round(info.v).toLocaleString('en')+' ريال';
   document.getElementById('popPrice').textContent=info.p.toLocaleString('en')+' ريال/م²';
   document.getElementById('popStatus').innerHTML=statusBadge(st);
+
+  // Customer info section - only if sold/reserved
+  const customerBox = document.getElementById('popCustomer');
+  if(st==='مباعة' || st==='محجوز'){
+    // Find the matching transaction (most recent for this lot)
+    const tx = transactions.find(t=>String(t.lot)===String(lot));
+    customerBox.style.display='block';
+    if(tx){
+      document.getElementById('popBuyer').textContent = tx.buyer || '—';
+      const phoneEl=document.getElementById('popPhone');
+      const phoneRow=document.getElementById('popPhoneRow');
+      if(tx.phone){phoneEl.textContent=tx.phone; phoneRow.style.display='flex';}
+      else{phoneRow.style.display='none';}
+
+      const sellerEl=document.getElementById('popSeller');
+      const sellerRow=document.getElementById('popSellerRow');
+      if(tx.seller){sellerEl.textContent=tx.seller; sellerRow.style.display='flex';}
+      else{sellerRow.style.display='none';}
+
+      const dateRow=document.getElementById('popDateRow');
+      if(tx.date){document.getElementById('popDate').textContent=tx.date; dateRow.style.display='flex';}
+      else{dateRow.style.display='none';}
+
+      const priceRow=document.getElementById('popSalePriceRow');
+      if(tx.salePrice){document.getElementById('popSalePrice').textContent=Math.round(tx.salePrice).toLocaleString('en')+' ريال/م²'; priceRow.style.display='flex';}
+      else{priceRow.style.display='none';}
+
+      const notesRow=document.getElementById('popNotesRow');
+      if(tx.notes){document.getElementById('popNotes').textContent=tx.notes; notesRow.style.display='flex';}
+      else{notesRow.style.display='none';}
+    } else {
+      // Status changed but no transaction record yet
+      document.getElementById('popBuyer').textContent='— (لا توجد بيانات)';
+      ['popPhoneRow','popSellerRow','popDateRow','popSalePriceRow','popNotesRow'].forEach(id=>{
+        document.getElementById(id).style.display='none';
+      });
+    }
+  } else {
+    customerBox.style.display='none';
+  }
+
   const acts=document.getElementById('popActions');
   const canEdit = currentUser && (currentUser.role==='admin'||currentUser.role==='sales');
   if(canEdit){
@@ -20468,8 +20570,10 @@ function showLotPopup(lot,e){
   popup.style.display='block';
   const rect=document.getElementById('mapContainer').getBoundingClientRect();
   let px=e.clientX-rect.left+14, py=e.clientY-rect.top-24;
-  if(px+235>rect.width) px=e.clientX-rect.left-248;
-  if(py+300>rect.height) py=e.clientY-rect.top-310;
+  // Recompute size after content set
+  const pw=popup.offsetWidth||265, ph=popup.offsetHeight||300;
+  if(px+pw>rect.width) px=e.clientX-rect.left-pw-14;
+  if(py+ph>rect.height) py=Math.max(8, rect.height-ph-8);
   popup.style.left=px+'px'; popup.style.top=py+'px';
 }
 function closePopup(){document.getElementById('lotPopup').style.display='none';}
@@ -20773,108 +20877,38 @@ function statusBadge(st){
 }
 
 // ── BLOCK SEARCH ──
-function searchByBlock(){
-  const blockNum = parseInt(document.getElementById('blockSearchInput').value);
-  const resultEl = document.getElementById('blockSearchResult');
-  const emptyEl  = document.getElementById('blockSearchEmpty');
+// ════════════════════════════════════════════════
+//  DASHBOARD UNIFIED SEARCH (parcel + customer)
+// ════════════════════════════════════════════════
+let dashSearchMode = 'parcel';
 
-  if(!blockNum || blockNum < 1){ 
-    resultEl.style.display='none'; 
-    emptyEl.style.display='none'; 
-    clearBlockHighlight();
-    return; 
-  }
-
-  // Find all lots in this block
-  const blockLots = Object.entries(LOTS).filter(([lot,info]) => info.b === blockNum);
-
-  if(blockLots.length === 0){
-    resultEl.style.display='none';
-    emptyEl.style.display='block';
-    clearBlockHighlight();
-    return;
-  }
-
-  emptyEl.style.display='none';
-  resultEl.style.display='block';
-
-  // Compute stats
-  let total=0, sold=0, reserved=0, available=0, totalArea=0, soldVal=0, totalVal=0;
-  blockLots.forEach(([lot,info])=>{
-    const st = statusOverrides[lot]||info.s;
-    total++;
-    totalArea += info.a;
-    totalVal  += info.v;
-    if(st==='مباعة'){sold++; soldVal+=info.v;}
-    else if(st==='محجوز') reserved++;
-    else available++;
-  });
-
-  const pctSold = ((sold/total)*100).toFixed(0);
-  const isFullySold = sold === total;
-
-  // Render stat cards
-  document.getElementById('blockResultCards').innerHTML = `
-    <div style="background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center">
-      <div style="font-size:10px;color:var(--muted);margin-bottom:6px">إجمالي القطع</div>
-      <div style="font-size:26px;font-weight:900;color:#fff">${total}</div>
-      <div style="font-size:10px;color:var(--muted);margin-top:4px">بلوك ${blockNum}</div>
-    </div>
-    <div style="background:rgba(83,164,169,.1);border:1px solid rgba(83,164,169,.25);border-radius:12px;padding:14px;text-align:center">
-      <div style="font-size:10px;color:var(--muted);margin-bottom:6px">مباعة</div>
-      <div style="font-size:26px;font-weight:900;color:var(--teal)">${sold}</div>
-      <div style="font-size:10px;color:var(--teal);margin-top:4px">${pctSold}% من البلوك</div>
-    </div>
-    <div style="background:rgba(162,125,184,.1);border:1px solid rgba(162,125,184,.25);border-radius:12px;padding:14px;text-align:center">
-      <div style="font-size:10px;color:var(--muted);margin-bottom:6px">محجوزة / متاحة</div>
-      <div style="font-size:26px;font-weight:900;color:var(--purple)">${reserved}</div>
-      <div style="font-size:10px;color:#8aaaf0;margin-top:4px">${available} متاحة</div>
-    </div>
-    <div style="background:${isFullySold?'rgba(83,164,169,.15)':'rgba(255,255,255,.04)'};border:1px solid ${isFullySold?'rgba(83,164,169,.4)':'var(--border)'};border-radius:12px;padding:14px;text-align:center">
-      <div style="font-size:10px;color:var(--muted);margin-bottom:6px">حالة البلوك</div>
-      <div style="font-size:15px;font-weight:900;color:${isFullySold?'var(--teal)':'#f59e0b'}">${isFullySold?'✅ مباع بالكامل':'🔄 جزئي'}</div>
-      <div style="font-size:10px;color:var(--muted);margin-top:6px">${(soldVal/1e6).toFixed(2)} م ريال محصّل</div>
-    </div>
-  `;
-
-  // Render lots table
-  document.getElementById('blockLotsBody').innerHTML = blockLots
-    .sort((a,b)=>parseInt(a[0])-parseInt(b[0]))
-    .map(([lot,info],i)=>{
-      const st=statusOverrides[lot]||info.s;
-      return `<div class="tx-row" style="grid-template-columns:50px 80px 80px 1fr 110px 90px;cursor:pointer" onclick="highlightLotOnMap('${lot}')">
-        <div style="color:var(--muted)">${i+1}</div>
-        <div style="font-weight:700;color:var(--teal)">${lot}</div>
-        <div><span class="type-badge ${info.t==='تجاري'?'tb-c':'tb-r'}">${info.t}</span></div>
-        <div dir="ltr">${info.a.toLocaleString('en')}</div>
-        <div dir="ltr" style="color:#f59e0b;font-weight:700">${Math.round(info.v).toLocaleString('en')}</div>
-        <div>${statusBadge(st)}</div>
-      </div>`;
-    }).join('');
-
-  // Highlight block on map
-  highlightBlockOnMap(blockNum, blockLots.map(([lot])=>lot));
+function switchDashSearch(mode){
+  dashSearchMode = mode;
+  document.getElementById('dashTabParcel').classList.toggle('active', mode==='parcel');
+  document.getElementById('dashTabCustomer').classList.toggle('active', mode==='customer');
+  document.getElementById('dashParcelPanel').style.display = mode==='parcel' ? 'block' : 'none';
+  document.getElementById('dashCustomerPanel').style.display = mode==='customer' ? 'block' : 'none';
+  dashClearSearch();
 }
 
-function clearBlockSearch(){
-  document.getElementById('blockSearchInput').value='';
-  document.getElementById('blockSearchResult').style.display='none';
-  document.getElementById('blockSearchEmpty').style.display='none';
-  clearBlockHighlight();
+function dashClearSearch(){
+  document.getElementById('dashParcelInput').value='';
+  document.getElementById('dashCustomerInput').value='';
+  document.getElementById('dashSearchResult').style.display='none';
+  document.getElementById('dashSearchEmpty').style.display='none';
+  clearMapHighlight();
 }
 
-function clearBlockHighlight(){
+function clearMapHighlight(){
   if(!svgEl) return;
   svgEl.querySelectorAll('[data-lot]').forEach(el=>{
-    el.classList.remove('lot-dimmed','block-highlight');
-    el.style.stroke='';
-    el.style.strokeWidth='';
+    el.classList.remove('lot-dimmed');
+    el.style.stroke=''; el.style.strokeWidth='';
   });
 }
 
-function highlightBlockOnMap(blockNum, lotNums){
+function highlightLotsOnMap(lotSet){
   if(!svgEl) return;
-  const lotSet = new Set(lotNums.map(String));
   svgEl.querySelectorAll('[data-lot]').forEach(el=>{
     const lot = el.getAttribute('data-lot');
     if(lotSet.has(lot)){
@@ -20888,11 +20922,174 @@ function highlightBlockOnMap(blockNum, lotNums){
   });
 }
 
+// ──── Parcel search (lot # or block #) ────
+function dashSearchParcel(){
+  const val = document.getElementById('dashParcelInput').value.trim();
+  const resultEl = document.getElementById('dashSearchResult');
+  const emptyEl  = document.getElementById('dashSearchEmpty');
+  if(!val){ resultEl.style.display='none'; emptyEl.style.display='none'; clearMapHighlight(); return; }
+
+  // Try as lot number first
+  if(LOTS[val]){
+    showParcelResult([val], 'قطعة #'+val);
+    return;
+  }
+  // Try as block number
+  const num = parseInt(val);
+  if(!isNaN(num)){
+    const blockLots = Object.entries(LOTS).filter(([_,info])=>info.b===num).map(([l])=>l);
+    if(blockLots.length){
+      showParcelResult(blockLots, 'بلوك #'+num);
+      return;
+    }
+  }
+  resultEl.style.display='none';
+  emptyEl.style.display='block';
+  clearMapHighlight();
+}
+
+function showParcelResult(lots, title){
+  const resultEl=document.getElementById('dashSearchResult');
+  const emptyEl=document.getElementById('dashSearchEmpty');
+  emptyEl.style.display='none'; resultEl.style.display='block';
+
+  // Compute stats
+  let total=0,sold=0,reserved=0,available=0,soldVal=0;
+  lots.forEach(lot=>{
+    const info=LOTS[lot]; if(!info) return;
+    const st=statusOverrides[lot]||info.s;
+    total++;
+    if(st==='مباعة'){sold++; soldVal+=info.v;}
+    else if(st==='محجوز') reserved++;
+    else available++;
+  });
+  const pctSold=total?((sold/total)*100).toFixed(0):0;
+  const allSold = sold===total;
+
+  document.getElementById('dashResultCards').innerHTML = `
+    <div style="background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center">
+      <div style="font-size:10px;color:var(--muted);margin-bottom:6px">إجمالي القطع</div>
+      <div style="font-size:26px;font-weight:900;color:#fff">${total}</div>
+      <div style="font-size:10px;color:var(--muted);margin-top:4px">${title}</div>
+    </div>
+    <div style="background:rgba(211,47,47,.1);border:1px solid rgba(211,47,47,.3);border-radius:12px;padding:14px;text-align:center">
+      <div style="font-size:10px;color:var(--muted);margin-bottom:6px">مباعة</div>
+      <div style="font-size:26px;font-weight:900;color:#d32f2f">${sold}</div>
+      <div style="font-size:10px;color:#e57373;margin-top:4px">${pctSold}%</div>
+    </div>
+    <div style="background:rgba(46,139,87,.1);border:1px solid rgba(46,139,87,.3);border-radius:12px;padding:14px;text-align:center">
+      <div style="font-size:10px;color:var(--muted);margin-bottom:6px">محجوزة / متاحة</div>
+      <div style="font-size:26px;font-weight:900;color:#2e8b57">${reserved}</div>
+      <div style="font-size:10px;color:#8aaaf0;margin-top:4px">${available} متاحة</div>
+    </div>
+    <div style="background:${allSold?'rgba(211,47,47,.15)':'rgba(255,255,255,.04)'};border:1px solid ${allSold?'rgba(211,47,47,.4)':'var(--border)'};border-radius:12px;padding:14px;text-align:center">
+      <div style="font-size:10px;color:var(--muted);margin-bottom:6px">الحالة العامة</div>
+      <div style="font-size:15px;font-weight:900;color:${allSold?'#d32f2f':'#f59e0b'}">${allSold?'✅ مباع بالكامل':total===1?'قطعة فردية':'🔄 جزئي'}</div>
+      <div style="font-size:10px;color:var(--muted);margin-top:6px">${(soldVal/1e6).toFixed(2)} م ريال محصّل</div>
+    </div>`;
+
+  // Table
+  document.getElementById('dashResultTitle').textContent = lots.length===1 ? 'تفاصيل القطعة' : 'قطع ' + title;
+  document.getElementById('dashResultHeader').innerHTML =
+    `<div class="tx-header" style="grid-template-columns:50px 80px 80px 1fr 110px 90px">
+      <div>م</div><div>القطعة</div><div>النوع</div><div>المساحة م²</div><div>القيمة ريال</div><div>الحالة</div>
+    </div>`;
+
+  document.getElementById('dashResultBody').innerHTML = lots
+    .sort((a,b)=>parseInt(a)-parseInt(b))
+    .map((lot,i)=>{
+      const info=LOTS[lot]; if(!info) return '';
+      const st=statusOverrides[lot]||info.s;
+      return `<div class="tx-row" style="grid-template-columns:50px 80px 80px 1fr 110px 90px;cursor:pointer" onclick="highlightLotOnMap('${lot}')">
+        <div style="color:var(--muted)">${i+1}</div>
+        <div style="font-weight:700;color:var(--teal)">${lot}</div>
+        <div><span class="type-badge ${info.t==='تجاري'?'tb-c':'tb-r'}">${info.t}</span></div>
+        <div dir="ltr">${info.a.toLocaleString('en')}</div>
+        <div dir="ltr" style="color:#f59e0b;font-weight:700">${Math.round(info.v).toLocaleString('en')}</div>
+        <div>${statusBadge(st)}</div>
+      </div>`;
+    }).join('');
+
+  highlightLotsOnMap(new Set(lots.map(String)));
+}
+
+// ──── Customer search (name, phone, ID) ────
+function dashSearchCustomer(){
+  const q = document.getElementById('dashCustomerInput').value.trim().toLowerCase();
+  const resultEl = document.getElementById('dashSearchResult');
+  const emptyEl  = document.getElementById('dashSearchEmpty');
+  if(!q){ resultEl.style.display='none'; emptyEl.style.display='none'; clearMapHighlight(); return; }
+
+  const matches = transactions.filter(t=>{
+    const buyer = (t.buyer||'').toLowerCase();
+    const phone = (t.phone||'').toLowerCase();
+    const id = (t.id||t.nationalId||'').toLowerCase();
+    const seller = (t.seller||'').toLowerCase();
+    return buyer.includes(q) || phone.includes(q) || id.includes(q) || seller.includes(q);
+  });
+
+  if(!matches.length){
+    resultEl.style.display='none';
+    emptyEl.style.display='block';
+    emptyEl.textContent = '⚠️ لا يوجد عميل مطابق للبحث';
+    clearMapHighlight();
+    return;
+  }
+
+  emptyEl.style.display='none'; resultEl.style.display='block';
+
+  // Stats
+  const totalVal = matches.reduce((s,t)=>s+(t.value||0),0);
+  const soldCount = matches.filter(t=>t.status==='مباعة').length;
+  const resvCount = matches.filter(t=>t.status==='محجوز').length;
+  const uniqueBuyers = new Set(matches.map(t=>t.buyer)).size;
+
+  document.getElementById('dashResultCards').innerHTML = `
+    <div style="background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center">
+      <div style="font-size:10px;color:var(--muted);margin-bottom:6px">إجمالي الصفقات</div>
+      <div style="font-size:26px;font-weight:900;color:#fff">${matches.length}</div>
+      <div style="font-size:10px;color:var(--muted);margin-top:4px">${uniqueBuyers} عميل</div>
+    </div>
+    <div style="background:rgba(211,47,47,.1);border:1px solid rgba(211,47,47,.3);border-radius:12px;padding:14px;text-align:center">
+      <div style="font-size:10px;color:var(--muted);margin-bottom:6px">مباعة</div>
+      <div style="font-size:26px;font-weight:900;color:#d32f2f">${soldCount}</div>
+    </div>
+    <div style="background:rgba(46,139,87,.1);border:1px solid rgba(46,139,87,.3);border-radius:12px;padding:14px;text-align:center">
+      <div style="font-size:10px;color:var(--muted);margin-bottom:6px">محجوزة</div>
+      <div style="font-size:26px;font-weight:900;color:#2e8b57">${resvCount}</div>
+    </div>
+    <div style="background:rgba(245,176,66,.1);border:1px solid rgba(245,176,66,.3);border-radius:12px;padding:14px;text-align:center">
+      <div style="font-size:10px;color:var(--muted);margin-bottom:6px">إجمالي القيمة</div>
+      <div style="font-size:18px;font-weight:900;color:#f5b042" dir="ltr">${totalVal.toLocaleString('en')}</div>
+      <div style="font-size:10px;color:var(--muted);margin-top:4px">ريال</div>
+    </div>`;
+
+  document.getElementById('dashResultTitle').textContent = `صفقات العميل (${matches.length})`;
+  document.getElementById('dashResultHeader').innerHTML =
+    `<div class="tx-header" style="grid-template-columns:40px 1fr 80px 70px 60px 110px 80px">
+      <div>م</div><div>العميل</div><div>الجوال</div><div>القطعة</div><div>النوع</div><div>القيمة</div><div>الحالة</div>
+    </div>`;
+
+  document.getElementById('dashResultBody').innerHTML = matches.map((t,i)=>{
+    return `<div class="tx-row" style="grid-template-columns:40px 1fr 80px 70px 60px 110px 80px;cursor:pointer" onclick="highlightLotOnMap('${t.lot}')">
+      <div style="color:var(--muted)">${i+1}</div>
+      <div style="font-weight:700">${t.buyer||'—'}</div>
+      <div style="color:var(--muted);font-size:10px" dir="ltr">${t.phone||'—'}</div>
+      <div style="font-weight:700;color:var(--teal)">${t.lot}</div>
+      <div><span class="type-badge ${t.type==='تجاري'?'tb-c':'tb-r'}">${t.type}</span></div>
+      <div dir="ltr" style="color:#f59e0b;font-weight:700">${(t.value||0).toLocaleString('en')}</div>
+      <div>${statusBadge(t.status)}</div>
+    </div>`;
+  }).join('');
+
+  // Highlight all matching lots on the map
+  highlightLotsOnMap(new Set(matches.map(t=>String(t.lot))));
+}
+
 function highlightLotOnMap(lot){
   if(!svgEl) return;
   const el = svgEl.querySelector('[data-lot="'+lot+'"]');
   if(!el) return;
-  // Flash white then restore
   const origFill = el.style.fill;
   el.style.fill='#ffffff';
   el.style.stroke='#ffffff';
@@ -20901,7 +21098,7 @@ function highlightLotOnMap(lot){
     el.style.fill=origFill;
     applyStatusColors();
   }, 900);
-  // Also switch to map tab
+  // Switch to map tab
   showPage('map', document.querySelector('.nav-tab'));
   setTimeout(()=>showLotPopup(lot, {clientX: window.innerWidth/2, clientY: window.innerHeight/2}), 400);
 }
